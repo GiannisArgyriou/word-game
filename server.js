@@ -251,14 +251,21 @@ class GameRoom {
   getGameStateForPlayer(playerId) {
     const gameState = this.getGameState();
     
-    // Hide the word from the player who is guessing
+    // The current player is the one describing (who can see the word and control the game)
     const currentPlayer = this.players[this.currentPlayerIndex];
-    const isCurrentPlayerDescribing = currentPlayer && currentPlayer.id !== playerId;
+    const isDescriber = currentPlayer && currentPlayer.id === playerId;
     
-    if (!isCurrentPlayerDescribing && this.gameState === 'playing') {
+    if (isDescriber && this.gameState === 'playing') {
+      // Describer sees the word and can control the game
+      gameState.isDescriber = true;
+      gameState.isGuesser = false;
+    } else if (this.gameState === 'playing') {
+      // Guesser doesn't see the word and cannot control the game
       gameState.currentWord = '***'; // Hide word from guesser
+      gameState.isDescriber = false;
       gameState.isGuesser = true;
     } else {
+      gameState.isDescriber = false;
       gameState.isGuesser = false;
     }
     

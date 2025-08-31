@@ -251,19 +251,21 @@ class CatchPhraseGame {
         const currentWord = document.getElementById('currentWord');
         const playerRole = document.getElementById('playerRole');
         
-        if (this.gameState.isGuesser) {
-            currentWord.textContent = 'LISTEN AND GUESS!';
-            currentWord.style.fontSize = '2rem';
-            currentWord.style.color = '#667eea';
-            playerRole.textContent = `${this.gameState.currentPlayer.name} is describing a word for you to guess!`;
-            playerRole.style.color = '#667eea';
-            playerRole.style.fontWeight = '600';
-        } else {
+        if (this.gameState.isDescriber) {
+            // Player is describing - can see word and control game
             currentWord.textContent = this.gameState.currentWord.toUpperCase();
             currentWord.style.fontSize = '3rem';
             currentWord.style.color = 'white';
             playerRole.textContent = `Describe this word to ${this.getOtherPlayerName()}!`;
             playerRole.style.color = '#ffd700';
+            playerRole.style.fontWeight = '600';
+        } else if (this.gameState.isGuesser) {
+            // Player is guessing - cannot see word or control game
+            currentWord.textContent = 'LISTEN AND GUESS!';
+            currentWord.style.fontSize = '2rem';
+            currentWord.style.color = '#667eea';
+            playerRole.textContent = `${this.gameState.currentPlayer.name} is describing a word for you to guess!`;
+            playerRole.style.color = '#667eea';
             playerRole.style.fontWeight = '600';
         }
         
@@ -272,7 +274,7 @@ class CatchPhraseGame {
         // Update team score
         this.updateScores();
 
-        // Show/hide controls based on current player and ensure UI updates immediately
+        // Show/hide controls based on whether player is the describer
         this.updateGameControls();
 
         // Handle round transitions
@@ -280,7 +282,7 @@ class CatchPhraseGame {
     }
 
     updateGameControls() {
-        const isCurrentPlayer = this.gameState.currentPlayer.id === this.socket.id;
+        const isDescriber = this.gameState.isDescriber;
         const controls = document.querySelector('.game-controls');
         const existingMsg = controls.parentNode.querySelector('.waiting-message');
         
@@ -289,17 +291,48 @@ class CatchPhraseGame {
             existingMsg.remove();
         }
 
-        if (isCurrentPlayer) {
+        if (isDescriber) {
+            // Describer controls the game
             controls.style.display = 'flex';
+            
+            // Add helpful instruction for describer
+            const instructionMsg = document.createElement('p');
+            instructionMsg.textContent = `Describe "${this.gameState.currentWord}" without saying the word itself!`;
+            instructionMsg.style.color = '#e53e3e';
+            instructionMsg.style.fontSize = '1rem';
+            instructionMsg.style.margin = '10px 0';
+            instructionMsg.style.textAlign = 'center';
+            instructionMsg.style.fontWeight = '600';
+            instructionMsg.className = 'describer-instruction';
+            
+            // Remove existing instruction
+            const existingInstruction = controls.parentNode.querySelector('.describer-instruction');
+            if (existingInstruction) {
+                existingInstruction.remove();
+            }
+            
+            controls.parentNode.insertBefore(instructionMsg, controls);
         } else {
+            // Guesser just waits and listens
             controls.style.display = 'none';
             
-            // Add waiting message for non-current player
+            // Remove describer instruction if exists
+            const existingInstruction = controls.parentNode.querySelector('.describer-instruction');
+            if (existingInstruction) {
+                existingInstruction.remove();
+            }
+            
+            // Add waiting message for guesser
             const waitingMsg = document.createElement('p');
-            waitingMsg.textContent = `${this.gameState.currentPlayer.name} is controlling the game...`;
+            if (this.gameState.isGuesser) {
+                waitingMsg.textContent = `Listen carefully and guess the word! ${this.gameState.currentPlayer.name} will click "They Got It!" when you guess correctly.`;
+            } else {
+                waitingMsg.textContent = `${this.gameState.currentPlayer.name} is controlling the game...`;
+            }
             waitingMsg.style.color = '#718096';
             waitingMsg.style.fontSize = '1.1rem';
             waitingMsg.style.margin = '20px 0';
+            waitingMsg.style.textAlign = 'center';
             waitingMsg.className = 'waiting-message';
             
             controls.parentNode.insertBefore(waitingMsg, controls.nextSibling);
