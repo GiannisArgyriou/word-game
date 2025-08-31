@@ -242,10 +242,18 @@ p {
     color: #4a5568;
 }
 
+/* Timer */
 .timer {
     font-size: 1.5rem;
-    color: #e53e3e;
+    color: #4a5568;
     font-weight: 700;
+    transition: color 0.3s ease;
+}
+
+@keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+    100% { transform: scale(1); }
 }
 
 /* Word Display */
@@ -275,6 +283,12 @@ p {
     font-size: 1.2rem;
     opacity: 0.9;
     margin: 0;
+}
+
+#playerRole {
+    font-size: 1.2rem;
+    margin: 10px 0;
+    font-weight: 600;
 }
 
 /* Game Controls */
@@ -340,15 +354,50 @@ p {
     display: none;
 }
 
-/* Winner Display */
-#winnerDisplay {
+/* Team Score Styling */
+.team-score, .team-final-score {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+}
+
+.team-score .score-name, .team-final-score .score-name {
+    color: white;
+    opacity: 0.9;
+}
+
+.team-score .score-value, .team-final-score .score-value {
+    color: white;
+    font-size: 2rem;
+}
+
+/* Performance Messages */
+.performance-message {
     margin: 20px 0;
     padding: 20px;
-    background: linear-gradient(135deg, #ffeaa7 0%, #fab1a0 100%);
     border-radius: 15px;
     font-size: 1.3rem;
     font-weight: 600;
-    color: #2d3436;
+    text-align: center;
+}
+
+.performance-message.excellent {
+    background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
+    color: white;
+}
+
+.performance-message.good {
+    background: linear-gradient(135deg, #4299e1 0%, #3182ce 100%);
+    color: white;
+}
+
+.performance-message.okay {
+    background: linear-gradient(135deg, #ed8936 0%, #dd6b20 100%);
+    color: white;
+}
+
+.performance-message.needs-improvement {
+    background: linear-gradient(135deg, #f56565 0%, #e53e3e 100%);
+    color: white;
 }
 
 /* Message Container */

@@ -66,6 +66,14 @@ class CatchPhraseGame {
             this.updateGameDisplay();
         });
 
+        // Real-time timer updates
+        this.socket.on('timerUpdate', (data) => {
+            if (this.gameState) {
+                this.gameState.timeLeft = data.timeLeft;
+                this.updateTimer();
+            }
+        });
+
         this.socket.on('error', (data) => {
             this.showMessage(data.message, 'error');
         });
@@ -227,14 +235,30 @@ class CatchPhraseGame {
         // Update game info
         document.getElementById('currentRound').textContent = this.gameState.currentRound;
         document.getElementById('maxRounds').textContent = this.gameState.maxRounds;
-        document.getElementById('timeLeft').textContent = this.gameState.timeLeft;
+        this.updateTimer();
         document.getElementById('currentPlayerName').textContent = this.gameState.currentPlayer.name;
 
-        // Update word display
-        document.getElementById('currentWord').textContent = this.gameState.currentWord.toUpperCase();
+        // Update word display based on player role
+        const currentWord = document.getElementById('currentWord');
+        const playerRole = document.getElementById('playerRole');
+        
+        if (this.gameState.isGuesser) {
+            currentWord.textContent = 'LISTEN AND GUESS!';
+            currentWord.style.fontSize = '2rem';
+            playerRole.textContent = `${this.gameState.currentPlayer.name} is describing a word for you to guess!`;
+            playerRole.style.color = '#667eea';
+            playerRole.style.fontWeight = '600';
+        } else {
+            currentWord.textContent = this.gameState.currentWord.toUpperCase();
+            currentWord.style.fontSize = '3rem';
+            playerRole.textContent = `Describe this word to ${this.getOtherPlayerName()}!`;
+            playerRole.style.color = '#e53e3e';
+            playerRole.style.fontWeight = '600';
+        }
+        
         document.getElementById('wordCategory').textContent = `Difficulty: ${this.gameState.difficulty}`;
 
-        // Update scores
+        // Update team score
         this.updateScores();
 
         // Show/hide controls based on current player
@@ -244,7 +268,7 @@ class CatchPhraseGame {
 
         if (!isCurrentPlayer) {
             const waitingMsg = document.createElement('p');
-            waitingMsg.textContent = `Waiting for ${this.gameState.currentPlayer.name} to describe the word...`;
+            waitingMsg.textContent = `Waiting for ${this.gameState.currentPlayer.name} to control the game...`;
             waitingMsg.style.color = '#718096';
             waitingMsg.style.fontSize = '1.1rem';
             waitingMsg.style.margin = '20px 0';
@@ -267,28 +291,67 @@ class CatchPhraseGame {
         this.handleRoundTransition();
     }
 
+    updateTimer() {
+        document.getElementById('timeLeft').textContent = this.gameState.timeLeft;
+        
+        // Add visual urgency when time is running low
+        const timerElement = document.querySelector('.timer');
+        if (this.gameState.timeLeft <= 10) {
+            timerElement.style.color = '#e53e3e';
+            timerElement.style.animation = 'pulse 1s infinite';
+        } else if (this.gameState.timeLeft <= 30) {
+            timerElement.style.color = '#ed8936';
+            timerElement.style.animation = 'none';
+        } else {
+            timerElement.style.color = '#4a5568';
+            timerElement.style.animation = 'none';
+        }
+    }
+
+    getOtherPlayerName() {
+        if (!this.gameState || !this.gameState.players) return 'your teammate';
+        const otherPlayer = this.gameState.players.find(p => p.id !== this.socket.id);
+        return otherPlayer ? otherPlayer.name : 'your teammate';
+    }
+
     updateScores() {
         if (!this.gameState) return;
 
         const scoresDisplay = document.getElementById('scoresDisplay');
         scoresDisplay.innerHTML = '';
 
-        this.gameState.players.forEach(player => {
-            const scoreDiv = document.createElement('div');
-            scoreDiv.className = 'score-item';
-            
-            const nameDiv = document.createElement('div');
-            nameDiv.className = 'score-name';
-            nameDiv.textContent = player.name;
-            
-            const valueDiv = document.createElement('div');
-            valueDiv.className = 'score-value';
-            valueDiv.textContent = this.gameState.scores[player.id] || 0;
-            
-            scoreDiv.appendChild(nameDiv);
-            scoreDiv.appendChild(valueDiv);
-            scoresDisplay.appendChild(scoreDiv);
-        });
+        // Show team score
+        const scoreDiv = document.createElement('div');
+        scoreDiv.className = 'score-item team-score';
+        
+        const labelDiv = document.createElement('div');
+        labelDiv.className = 'score-name';
+        labelDiv.textContent = 'Words Guessed';
+        
+        const valueDiv = document.createElement('div');
+        valueDiv.className = 'score-value';
+        valueDiv.textContent = this.gameState.totalScore || 0;
+        
+        scoreDiv.appendChild(labelDiv);
+        scoreDiv.appendChild(valueDiv);
+        scoresDisplay.appendChild(scoreDiv);
+
+        // Show round progress
+        const progressDiv = document.createElement('div');
+        progressDiv.className = 'score-item';
+        
+        const progressLabel = document.createElement('div');
+        progressLabel.className = 'score-name';
+        progressLabel.textContent = 'Round Progress';
+        
+        const progressValue = document.createElement('div');
+        progressValue.className = 'score-value';
+        progressValue.style.fontSize = '1.2rem';
+        progressValue.textContent = `${this.gameState.currentRound}/${this.gameState.maxRounds}`;
+        
+        progressDiv.appendChild(progressLabel);
+        progressDiv.appendChild(progressValue);
+        scoresDisplay.appendChild(progressDiv);
     }
 
     handleRoundTransition() {
@@ -299,49 +362,49 @@ class CatchPhraseGame {
     updateGameOverScreen() {
         if (!this.gameState) return;
 
-        // Update final scores
+        // Update final team performance
         const finalScoresDisplay = document.getElementById('finalScoresDisplay');
         finalScoresDisplay.innerHTML = '';
 
-        let winner = null;
-        let maxScore = -1;
+        const totalScore = this.gameState.totalScore || 0;
+        const maxPossibleWords = this.gameState.maxRounds * 30; // Rough estimate
 
-        this.gameState.players.forEach(player => {
-            const score = this.gameState.scores[player.id] || 0;
-            if (score > maxScore) {
-                maxScore = score;
-                winner = player;
-            }
+        const scoreDiv = document.createElement('div');
+        scoreDiv.className = 'score-item team-final-score';
+        
+        const labelDiv = document.createElement('div');
+        labelDiv.className = 'score-name';
+        labelDiv.textContent = 'Total Words Guessed';
+        
+        const valueDiv = document.createElement('div');
+        valueDiv.className = 'score-value';
+        valueDiv.textContent = totalScore;
+        
+        scoreDiv.appendChild(labelDiv);
+        scoreDiv.appendChild(valueDiv);
+        finalScoresDisplay.appendChild(scoreDiv);
 
-            const scoreDiv = document.createElement('div');
-            scoreDiv.className = 'score-item';
-            
-            const nameDiv = document.createElement('div');
-            nameDiv.className = 'score-name';
-            nameDiv.textContent = player.name;
-            
-            const valueDiv = document.createElement('div');
-            valueDiv.className = 'score-value';
-            valueDiv.textContent = score;
-            
-            scoreDiv.appendChild(nameDiv);
-            scoreDiv.appendChild(valueDiv);
-            finalScoresDisplay.appendChild(scoreDiv);
-        });
+        // Display performance feedback
+        const performanceDisplay = document.getElementById('performanceDisplay');
+        let performanceMessage = '';
+        let performanceClass = '';
 
-        // Display winner
-        const winnerDisplay = document.getElementById('winnerDisplay');
-        if (winner) {
-            const ties = this.gameState.players.filter(p => 
-                (this.gameState.scores[p.id] || 0) === maxScore
-            );
-            
-            if (ties.length > 1) {
-                winnerDisplay.textContent = "It's a tie! Great game!";
-            } else {
-                winnerDisplay.textContent = `🎉 ${winner.name} wins with ${maxScore} words!`;
-            }
+        if (totalScore >= 50) {
+            performanceMessage = "🏆 Amazing teamwork! You're word masters!";
+            performanceClass = 'excellent';
+        } else if (totalScore >= 30) {
+            performanceMessage = "🎉 Great job! Solid communication skills!";
+            performanceClass = 'good';
+        } else if (totalScore >= 15) {
+            performanceMessage = "👍 Good effort! Keep practicing together!";
+            performanceClass = 'okay';
+        } else {
+            performanceMessage = "💪 Practice makes perfect! Try again!";
+            performanceClass = 'needs-improvement';
         }
+
+        performanceDisplay.textContent = performanceMessage;
+        performanceDisplay.className = `performance-message ${performanceClass}`;
     }
 
     showMessage(message, type = 'info') {

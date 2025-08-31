@@ -53,7 +53,7 @@ class GameRoom {
     this.gameState = 'waiting'; // waiting, playing, finished
     this.currentWord = '';
     this.timeLeft = 60;
-    this.scores = {};
+    this.totalScore = 0; // Cooperative scoring - total words guessed by team
     this.timer = null;
     this.wordIndex = 0;
     this.usedWords = new Set();
@@ -63,7 +63,6 @@ class GameRoom {
   addPlayer(playerId, playerName) {
     if (this.players.length < 2) {
       this.players.push({ id: playerId, name: playerName });
-      this.scores[playerId] = 0;
       return true;
     }
     return false;
@@ -71,7 +70,6 @@ class GameRoom {
 
   removePlayer(playerId) {
     this.players = this.players.filter(p => p.id !== playerId);
-    delete this.scores[playerId];
     
     if (this.players.length === 0) {
       this.stopGame();
@@ -118,6 +116,10 @@ class GameRoom {
     this.stopTimer();
     this.timer = setInterval(() => {
       this.timeLeft--;
+      // Broadcast timer update to all players in real-time
+      const roomId = this.roomId;
+      io.to(roomId).emit('timerUpdate', { timeLeft: this.timeLeft });
+      
       if (this.timeLeft <= 0) {
         this.endRound();
       }
@@ -132,8 +134,7 @@ class GameRoom {
   }
 
   correctGuess() {
-    const currentPlayer = this.players[this.currentPlayerIndex];
-    this.scores[currentPlayer.id]++;
+    this.totalScore++; // Increment team score
     this.getNewWord();
   }
 
@@ -166,9 +167,7 @@ class GameRoom {
     this.gameState = 'waiting';
     this.currentRound = 0;
     this.stopTimer();
-    Object.keys(this.scores).forEach(playerId => {
-      this.scores[playerId] = 0;
-    });
+    this.totalScore = 0; // Reset team score
   }
 
   getGameState() {
@@ -181,9 +180,27 @@ class GameRoom {
       currentPlayer: this.players[this.currentPlayerIndex],
       currentWord: this.currentWord,
       timeLeft: this.timeLeft,
-      scores: this.scores,
+      totalScore: this.totalScore, // Team score instead of individual scores
       difficulty: this.difficulty
     };
+  }
+
+  // Get game state for specific player (hides word from guesser)
+  getGameStateForPlayer(playerId) {
+    const gameState = this.getGameState();
+    
+    // Hide the word from the player who is guessing
+    const currentPlayer = this.players[this.currentPlayerIndex];
+    const isCurrentPlayerDescribing = currentPlayer && currentPlayer.id !== playerId;
+    
+    if (!isCurrentPlayerDescribing && this.gameState === 'playing') {
+      gameState.currentWord = '***'; // Hide word from guesser
+      gameState.isGuesser = true;
+    } else {
+      gameState.isGuesser = false;
+    }
+    
+    return gameState;
   }
 }
 
@@ -205,7 +222,7 @@ io.on('connection', (socket) => {
       players.set(socket.id, { roomId, playerName: data.playerName });
       
       socket.join(roomId);
-      socket.emit('roomCreated', { roomId, gameState: room.getGameState() });
+      socket.emit('roomCreated', { roomId, gameState: room.getGameStateForPlayer(socket.id) });
       
       console.log(`Room ${roomId} created by ${data.playerName}`);
     }
@@ -218,10 +235,12 @@ io.on('connection', (socket) => {
       players.set(socket.id, { roomId: data.roomId, playerName: data.playerName });
       
       socket.join(data.roomId);
-      socket.emit('roomJoined', { gameState: room.getGameState() });
+      socket.emit('roomJoined', { gameState: room.getGameStateForPlayer(socket.id) });
       
-      // Notify all players in the room
-      io.to(data.roomId).emit('gameUpdate', room.getGameState());
+      // Notify all players in the room with their specific game state
+      room.players.forEach(player => {
+        io.to(player.id).emit('gameUpdate', room.getGameStateForPlayer(player.id));
+      });
       
       console.log(`${data.playerName} joined room ${data.roomId}`);
     } else {
@@ -234,7 +253,10 @@ io.on('connection', (socket) => {
     if (playerData) {
       const room = rooms.get(playerData.roomId);
       if (room && room.startGame()) {
-        io.to(playerData.roomId).emit('gameUpdate', room.getGameState());
+        // Send player-specific game states
+        room.players.forEach(player => {
+          io.to(player.id).emit('gameUpdate', room.getGameStateForPlayer(player.id));
+        });
       }
     }
   });
@@ -245,7 +267,10 @@ io.on('connection', (socket) => {
       const room = rooms.get(playerData.roomId);
       if (room && room.gameState === 'playing') {
         room.correctGuess();
-        io.to(playerData.roomId).emit('gameUpdate', room.getGameState());
+        // Send updated game state to all players
+        room.players.forEach(player => {
+          io.to(player.id).emit('gameUpdate', room.getGameStateForPlayer(player.id));
+        });
       }
     }
   });
@@ -256,7 +281,10 @@ io.on('connection', (socket) => {
       const room = rooms.get(playerData.roomId);
       if (room && room.gameState === 'playing') {
         room.skipWord();
-        io.to(playerData.roomId).emit('gameUpdate', room.getGameState());
+        // Send updated game state to all players
+        room.players.forEach(player => {
+          io.to(player.id).emit('gameUpdate', room.getGameStateForPlayer(player.id));
+        });
       }
     }
   });
@@ -267,7 +295,10 @@ io.on('connection', (socket) => {
       const room = rooms.get(playerData.roomId);
       if (room && room.gameState === 'waiting') {
         room.difficulty = data.difficulty;
-        io.to(playerData.roomId).emit('gameUpdate', room.getGameState());
+        // Send updated game state to all players
+        room.players.forEach(player => {
+          io.to(player.id).emit('gameUpdate', room.getGameStateForPlayer(player.id));
+        });
       }
     }
   });
@@ -284,7 +315,10 @@ io.on('connection', (socket) => {
         if (room.players.length === 0) {
           rooms.delete(playerData.roomId);
         } else {
-          io.to(playerData.roomId).emit('gameUpdate', room.getGameState());
+          // Send updated game state to remaining players
+          room.players.forEach(player => {
+            io.to(player.id).emit('gameUpdate', room.getGameStateForPlayer(player.id));
+          });
         }
       }
       players.delete(socket.id);
