@@ -44,7 +44,7 @@ const rooms = new Map();
 const players = new Map();
 
 class GameRoom {
-  constructor(roomId) {
+  constructor(roomId, ioInstance) {
     this.roomId = roomId;
     this.players = [];
     this.currentRound = 0;
@@ -58,6 +58,7 @@ class GameRoom {
     this.wordIndex = 0;
     this.usedWords = new Set();
     this.difficulty = 'easy';
+    this.io = ioInstance; // Store io instance for broadcasting
   }
 
   addPlayer(playerId, playerName) {
@@ -116,14 +117,21 @@ class GameRoom {
     this.stopTimer();
     this.timer = setInterval(() => {
       this.timeLeft--;
+      
       // Broadcast timer update to all players in real-time
-      const roomId = this.roomId;
-      io.to(roomId).emit('timerUpdate', { timeLeft: this.timeLeft });
+      this.broadcastTimerUpdate();
       
       if (this.timeLeft <= 0) {
         this.endRound();
       }
     }, 1000);
+  }
+
+  broadcastTimerUpdate() {
+    // Send timer update to all players in the room
+    this.players.forEach(player => {
+      this.io.to(player.id).emit('timerUpdate', { timeLeft: this.timeLeft });
+    });
   }
 
   stopTimer() {
@@ -136,26 +144,80 @@ class GameRoom {
   correctGuess() {
     this.totalScore++; // Increment team score
     this.getNewWord();
+    // Broadcast updated state immediately
+    this.broadcastGameState();
   }
 
   skipWord() {
     this.getNewWord();
+    // Broadcast updated state immediately
+    this.broadcastGameState();
   }
 
   endRound() {
     this.stopTimer();
+    
+    // Immediately switch players and update UI
     this.currentPlayerIndex = (this.currentPlayerIndex + 1) % 2;
+    
+    // Send immediate update to show role switch
+    this.broadcastGameState();
     
     if (this.currentRound < this.maxRounds) {
       this.currentRound++;
-      setTimeout(() => {
+      
+      // Show round transition with countdown
+      this.showRoundTransition(() => {
         if (this.gameState === 'playing') {
           this.startRound();
         }
-      }, 3000);
+      });
     } else {
       this.endGame();
     }
+  }
+
+  showRoundTransition(callback) {
+    // Broadcast round transition state
+    this.players.forEach(player => {
+      this.io.to(player.id).emit('roundTransition', {
+        message: `Round ${this.currentRound} starting soon...`,
+        nextPlayer: this.players[this.currentPlayerIndex].name,
+        countdown: 3
+      });
+    });
+
+    // Countdown from 3 to 1
+    let countdown = 3;
+    const countdownTimer = setInterval(() => {
+      countdown--;
+      
+      if (countdown > 0) {
+        this.players.forEach(player => {
+          this.io.to(player.id).emit('roundTransition', {
+            message: `Round ${this.currentRound} starting soon...`,
+            nextPlayer: this.players[this.currentPlayerIndex].name,
+            countdown: countdown
+          });
+        });
+      } else {
+        clearInterval(countdownTimer);
+        
+        // Hide transition and start round
+        this.players.forEach(player => {
+          this.io.to(player.id).emit('hideRoundTransition');
+        });
+        
+        callback();
+      }
+    }, 1000);
+  }
+
+  broadcastGameState() {
+    // Send updated game state to all players with their specific view
+    this.players.forEach(player => {
+      this.io.to(player.id).emit('gameUpdate', this.getGameStateForPlayer(player.id));
+    });
   }
 
   endGame() {
@@ -215,7 +277,7 @@ io.on('connection', (socket) => {
 
   socket.on('createRoom', (data) => {
     const roomId = generateRoomId();
-    const room = new GameRoom(roomId);
+    const room = new GameRoom(roomId, io);
     
     if (room.addPlayer(socket.id, data.playerName)) {
       rooms.set(roomId, room);
@@ -254,9 +316,7 @@ io.on('connection', (socket) => {
       const room = rooms.get(playerData.roomId);
       if (room && room.startGame()) {
         // Send player-specific game states
-        room.players.forEach(player => {
-          io.to(player.id).emit('gameUpdate', room.getGameStateForPlayer(player.id));
-        });
+        room.broadcastGameState();
       }
     }
   });
@@ -267,10 +327,7 @@ io.on('connection', (socket) => {
       const room = rooms.get(playerData.roomId);
       if (room && room.gameState === 'playing') {
         room.correctGuess();
-        // Send updated game state to all players
-        room.players.forEach(player => {
-          io.to(player.id).emit('gameUpdate', room.getGameStateForPlayer(player.id));
-        });
+        // Game state is broadcast within correctGuess method
       }
     }
   });
@@ -281,10 +338,7 @@ io.on('connection', (socket) => {
       const room = rooms.get(playerData.roomId);
       if (room && room.gameState === 'playing') {
         room.skipWord();
-        // Send updated game state to all players
-        room.players.forEach(player => {
-          io.to(player.id).emit('gameUpdate', room.getGameStateForPlayer(player.id));
-        });
+        // Game state is broadcast within skipWord method
       }
     }
   });
@@ -296,9 +350,7 @@ io.on('connection', (socket) => {
       if (room && room.gameState === 'waiting') {
         room.difficulty = data.difficulty;
         // Send updated game state to all players
-        room.players.forEach(player => {
-          io.to(player.id).emit('gameUpdate', room.getGameStateForPlayer(player.id));
-        });
+        room.broadcastGameState();
       }
     }
   });
@@ -316,9 +368,7 @@ io.on('connection', (socket) => {
           rooms.delete(playerData.roomId);
         } else {
           // Send updated game state to remaining players
-          room.players.forEach(player => {
-            io.to(player.id).emit('gameUpdate', room.getGameStateForPlayer(player.id));
-          });
+          room.broadcastGameState();
         }
       }
       players.delete(socket.id);

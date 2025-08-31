@@ -68,10 +68,19 @@ class CatchPhraseGame {
 
         // Real-time timer updates
         this.socket.on('timerUpdate', (data) => {
-            if (this.gameState) {
+            if (this.gameState && this.currentScreen === 'gameScreen') {
                 this.gameState.timeLeft = data.timeLeft;
                 this.updateTimer();
             }
+        });
+
+        // Round transition handling
+        this.socket.on('roundTransition', (data) => {
+            this.showRoundTransition(data);
+        });
+
+        this.socket.on('hideRoundTransition', () => {
+            this.hideRoundTransition();
         });
 
         this.socket.on('error', (data) => {
@@ -245,14 +254,16 @@ class CatchPhraseGame {
         if (this.gameState.isGuesser) {
             currentWord.textContent = 'LISTEN AND GUESS!';
             currentWord.style.fontSize = '2rem';
+            currentWord.style.color = '#667eea';
             playerRole.textContent = `${this.gameState.currentPlayer.name} is describing a word for you to guess!`;
             playerRole.style.color = '#667eea';
             playerRole.style.fontWeight = '600';
         } else {
             currentWord.textContent = this.gameState.currentWord.toUpperCase();
             currentWord.style.fontSize = '3rem';
+            currentWord.style.color = 'white';
             playerRole.textContent = `Describe this word to ${this.getOtherPlayerName()}!`;
-            playerRole.style.color = '#e53e3e';
+            playerRole.style.color = '#ffd700';
             playerRole.style.fontWeight = '600';
         }
         
@@ -261,34 +272,38 @@ class CatchPhraseGame {
         // Update team score
         this.updateScores();
 
-        // Show/hide controls based on current player
-        const isCurrentPlayer = this.gameState.currentPlayer.id === this.socket.id;
-        const controls = document.querySelector('.game-controls');
-        controls.style.display = isCurrentPlayer ? 'flex' : 'none';
-
-        if (!isCurrentPlayer) {
-            const waitingMsg = document.createElement('p');
-            waitingMsg.textContent = `Waiting for ${this.gameState.currentPlayer.name} to control the game...`;
-            waitingMsg.style.color = '#718096';
-            waitingMsg.style.fontSize = '1.1rem';
-            waitingMsg.style.margin = '20px 0';
-            
-            const existingMsg = controls.parentNode.querySelector('.waiting-message');
-            if (existingMsg) {
-                existingMsg.remove();
-            }
-            
-            waitingMsg.className = 'waiting-message';
-            controls.parentNode.insertBefore(waitingMsg, controls.nextSibling);
-        } else {
-            const existingMsg = controls.parentNode.querySelector('.waiting-message');
-            if (existingMsg) {
-                existingMsg.remove();
-            }
-        }
+        // Show/hide controls based on current player and ensure UI updates immediately
+        this.updateGameControls();
 
         // Handle round transitions
         this.handleRoundTransition();
+    }
+
+    updateGameControls() {
+        const isCurrentPlayer = this.gameState.currentPlayer.id === this.socket.id;
+        const controls = document.querySelector('.game-controls');
+        const existingMsg = controls.parentNode.querySelector('.waiting-message');
+        
+        // Remove existing waiting message
+        if (existingMsg) {
+            existingMsg.remove();
+        }
+
+        if (isCurrentPlayer) {
+            controls.style.display = 'flex';
+        } else {
+            controls.style.display = 'none';
+            
+            // Add waiting message for non-current player
+            const waitingMsg = document.createElement('p');
+            waitingMsg.textContent = `${this.gameState.currentPlayer.name} is controlling the game...`;
+            waitingMsg.style.color = '#718096';
+            waitingMsg.style.fontSize = '1.1rem';
+            waitingMsg.style.margin = '20px 0';
+            waitingMsg.className = 'waiting-message';
+            
+            controls.parentNode.insertBefore(waitingMsg, controls.nextSibling);
+        }
     }
 
     updateTimer() {
@@ -305,6 +320,34 @@ class CatchPhraseGame {
         } else {
             timerElement.style.color = '#4a5568';
             timerElement.style.animation = 'none';
+        }
+    }
+
+    showRoundTransition(data) {
+        const transitionElement = document.getElementById('roundTransition');
+        const overlayElement = document.getElementById('transitionOverlay');
+        
+        if (!transitionElement) return;
+        
+        transitionElement.querySelector('h2').textContent = 'Round Complete!';
+        transitionElement.querySelector('p').innerHTML = 
+            `<strong>${data.nextPlayer}</strong> will describe next round.<br>Starting in <span id="nextRoundTimer">${data.countdown}</span>...`;
+        
+        transitionElement.classList.remove('hidden');
+        if (overlayElement) {
+            overlayElement.classList.remove('hidden');
+        }
+    }
+
+    hideRoundTransition() {
+        const transitionElement = document.getElementById('roundTransition');
+        const overlayElement = document.getElementById('transitionOverlay');
+        
+        if (transitionElement) {
+            transitionElement.classList.add('hidden');
+        }
+        if (overlayElement) {
+            overlayElement.classList.add('hidden');
         }
     }
 
