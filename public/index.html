@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Catch Phrase - Online Word Game</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <!-- Home Screen -->
+        <div id="homeScreen" class="screen active">
+            <div class="game-header">
+                <h1>🎯 Catch Phrase</h1>
+                <p>Describe as many words as you can before time runs out!</p>
+            </div>
+            
+            <div class="menu-options">
+                <div class="input-group">
+                    <input type="text" id="playerName" placeholder="Enter your name" maxlength="20">
+                </div>
+                
+                <button id="createRoomBtn" class="btn btn-primary">Create Room</button>
+                <button id="joinRoomBtn" class="btn btn-secondary">Join Room</button>
+            </div>
+            
+            <div id="joinRoomForm" class="join-form hidden">
+                <div class="input-group">
+                    <input type="text" id="roomCode" placeholder="Enter room code" maxlength="6">
+                </div>
+                <button id="joinRoomSubmitBtn" class="btn btn-primary">Join</button>
+                <button id="cancelJoinBtn" class="btn btn-cancel">Cancel</button>
+            </div>
+        </div>
+
+        <!-- Waiting Room Screen -->
+        <div id="waitingScreen" class="screen">
+            <div class="game-header">
+                <h2>Room: <span id="roomIdDisplay"></span></h2>
+                <p>Share this code with your friend!</p>
+            </div>
+            
+            <div class="players-list">
+                <h3>Players</h3>
+                <div id="playersList"></div>
+            </div>
+            
+            <div class="game-settings">
+                <h3>Difficulty</h3>
+                <div class="difficulty-buttons">
+                    <button class="btn btn-difficulty active" data-difficulty="easy">Easy</button>
+                    <button class="btn btn-difficulty" data-difficulty="medium">Medium</button>
+                    <button class="btn btn-difficulty" data-difficulty="hard">Hard</button>
+                </div>
+            </div>
+            
+            <div class="waiting-actions">
+                <button id="startGameBtn" class="btn btn-primary" disabled>
+                    Waiting for 2nd player...
+                </button>
+                <button id="leaveRoomBtn" class="btn btn-cancel">Leave Room</button>
+            </div>
+        </div>
+
+        <!-- Game Screen -->
+        <div id="gameScreen" class="screen">
+            <div class="game-info">
+                <div class="round-info">
+                    <span>Round <span id="currentRound">1</span> of <span id="maxRounds">3</span></span>
+                </div>
+                <div class="timer">
+                    <span id="timeLeft">60</span>s
+                </div>
+                <div class="current-player">
+                    <span id="currentPlayerName">Player</span>'s turn
+                </div>
+            </div>
+            
+            <div class="word-display">
+                <h1 id="currentWord">LOADING...</h1>
+                <p id="wordCategory"></p>
+            </div>
+            
+            <div class="game-controls">
+                <button id="correctBtn" class="btn btn-success">✓ Correct!</button>
+                <button id="skipBtn" class="btn btn-warning">Skip</button>
+            </div>
+            
+            <div class="scores">
+                <h3>Scores</h3>
+                <div id="scoresDisplay"></div>
+            </div>
+            
+            <div class="round-transition hidden" id="roundTransition">
+                <h2>Round Complete!</h2>
+                <p>Next round starting in <span id="nextRoundTimer">3</span>...</p>
+            </div>
+        </div>
+
+        <!-- Game Over Screen -->
+        <div id="gameOverScreen" class="screen">
+            <div class="game-header">
+                <h1>🎉 Game Over!</h1>
+            </div>
+            
+            <div class="final-scores">
+                <h2>Final Scores</h2>
+                <div id="finalScoresDisplay"></div>
+                <div id="winnerDisplay"></div>
+            </div>
+            
+            <div class="game-over-actions">
+                <button id="playAgainBtn" class="btn btn-primary">Play Again</button>
+                <button id="homeBtn" class="btn btn-secondary">Home</button>
+            </div>
+        </div>
+
+        <!-- Error/Status Messages -->
+        <div id="messageContainer" class="message-container"></div>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
