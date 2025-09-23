@@ -263,13 +263,13 @@ class CatchPhraseGame {
             // Player is guessing - cannot see word or control game
             currentWord.textContent = 'LISTEN AND GUESS!';
             currentWord.style.fontSize = '2rem';
-            currentWord.style.color = '#667eea';
+            currentWord.style.color = '#e3f0ff'; // very light blue
             playerRole.textContent = `${this.gameState.currentPlayer.name} is describing a word for you to guess!`;
-            playerRole.style.color = '#667eea';
+            playerRole.style.color = '#ffd700';
             playerRole.style.fontWeight = '600';
         }
         
-        document.getElementById('wordCategory').textContent = `Difficulty: ${this.gameState.difficulty}`;
+        document.getElementById('wordCategory').textContent = ``;
 
         // Update team score
         this.updateScores();
