@@ -111,11 +111,66 @@ class CatchPhraseGame {
             this.showMessage('Please enter your name first', 'error');
             return;
         }
-
         this.playerName = playerName;
         document.getElementById('joinRoomForm').classList.remove('hidden');
         document.getElementById('joinRoomBtn').style.display = 'none';
         document.getElementById('createRoomBtn').style.display = 'none';
+    }
+
+    // Get translation for current word using word sets
+    getTranslation(word, language) {
+        // These must match the server's word sets
+        const WORD_CATEGORIES = {
+            en: {
+                easy: [
+                    'pizza', 'dog', 'car', 'book', 'phone', 'tree', 'water', 'music', 'house', 'coffee',
+                    'beach', 'movie', 'friend', 'school', 'birthday', 'vacation', 'chocolate', 'garden',
+                    'summer', 'winter', 'football', 'basketball', 'computer', 'restaurant', 'hospital'
+                ],
+                medium: [
+                    'adventure', 'telescope', 'volcano', 'butterfly', 'democracy', 'university', 'newspaper',
+                    'elephant', 'dinosaur', 'skeleton', 'laboratory', 'microphone', 'refrigerator', 'calculator',
+                    'photograph', 'mechanic', 'architect', 'detective', 'magician', 'scientist', 'astronaut',
+                    'thunderstorm', 'rainbow', 'mountain', 'lighthouse'
+                ],
+                hard: [
+                    'philosophical', 'entrepreneur', 'metamorphosis', 'consciousness', 'photosynthesis',
+                    'extraterrestrial', 'archaeological', 'cryptocurrency', 'biodegradable', 'sophisticated',
+                    'revolutionary', 'extraordinary', 'incomprehensible', 'interdisciplinary', 'neuroscience',
+                    'procrastination', 'claustrophobia', 'serendipity', 'antidisestablishmentarianism',
+                    'incompatibility', 'superintendent', 'telecommunications', 'anthropomorphic', 'epistemology'
+                ]
+            },
+            es: {
+                easy: [
+                    'pizza', 'perro', 'coche', 'libro', 'teléfono', 'árbol', 'agua', 'música', 'casa', 'café',
+                    'playa', 'película', 'amigo', 'escuela', 'cumpleaños', 'vacaciones', 'chocolate', 'jardín',
+                    'verano', 'invierno', 'fútbol', 'baloncesto', 'computadora', 'restaurante', 'hospital'
+                ],
+                medium: [
+                    'aventura', 'telescopio', 'volcán', 'mariposa', 'democracia', 'universidad', 'periódico',
+                    'elefante', 'dinosaurio', 'esqueleto', 'laboratorio', 'micrófono', 'refrigerador', 'calculadora',
+                    'fotografía', 'mecánico', 'arquitecto', 'detective', 'mago', 'científico', 'astronauta',
+                    'tormenta', 'arcoíris', 'montaña', 'faro'
+                ],
+                hard: [
+                    'filosófico', 'emprendedor', 'metamorfosis', 'conciencia', 'fotosíntesis',
+                    'extraterrestre', 'arqueológico', 'criptomoneda', 'biodegradable', 'sofisticado',
+                    'revolucionario', 'extraordinario', 'incomprensible', 'interdisciplinario', 'neurociencia',
+                    'procrastinación', 'claustrofobia', 'serendipia', 'antidisestablishmentarianismo',
+                    'incompatibilidad', 'superintendente', 'telecomunicaciones', 'antropomórfico', 'epistemología'
+                ]
+            }
+        };
+        // Find translation by matching index in word sets
+        let fromLang = language;
+        let toLang = language === 'en' ? 'es' : 'en';
+        let difficulty = this.gameState.difficulty || 'easy';
+        let idx = WORD_CATEGORIES[fromLang][difficulty].indexOf(word);
+        if (idx !== -1) {
+            return WORD_CATEGORIES[toLang][difficulty][idx];
+        }
+        return null;
     }
 
     hideJoinForm() {
@@ -260,6 +315,44 @@ class CatchPhraseGame {
         document.getElementById('maxRounds').textContent = this.gameState.maxRounds;
         this.updateTimer();
         document.getElementById('currentPlayerName').textContent = this.gameState.currentPlayer.name;
+
+        // Translation button logic for describer
+        // Remove any previous translation button or translation text
+        const oldBtn = document.getElementById('showTranslationBtn');
+        if (oldBtn) oldBtn.remove();
+        const oldTrans = document.getElementById('translationText');
+        if (oldTrans) oldTrans.remove();
+
+        // Only show for describer, during playing
+        if (this.gameState.isDescriber && this.gameState.gameState === 'playing') {
+            if (this.translationTimeout) clearTimeout(this.translationTimeout);
+            this.translationTimeout = setTimeout(() => {
+                // Only show if still describing
+                if (this.currentScreen === 'gameScreen' && this.gameState.isDescriber && this.gameState.gameState === 'playing') {
+                    const controls = document.querySelector('.game-controls');
+                    const btn = document.createElement('button');
+                    btn.id = 'showTranslationBtn';
+                    btn.className = 'btn btn-info';
+                    btn.textContent = 'Show Translation';
+                    btn.style.marginTop = '12px';
+                    btn.onclick = () => {
+                        const translation = this.getTranslation(this.gameState.currentWord, this.gameState.language);
+                        let transText = document.createElement('div');
+                        transText.id = 'translationText';
+                        transText.className = 'translation-text';
+                        transText.style.marginTop = '10px';
+                        transText.style.fontSize = '1.1rem';
+                        transText.style.color = '#4299e1';
+                        transText.textContent = translation ? `Translation: ${translation}` : 'Translation not found.';
+                        btn.parentNode.insertBefore(transText, btn.nextSibling);
+                        btn.disabled = true;
+                    };
+                    controls.parentNode.insertBefore(btn, controls.nextSibling);
+                }
+            }, 5000);
+        } else {
+            if (this.translationTimeout) clearTimeout(this.translationTimeout);
+        }
 
         // Update word display based on player role
         const currentWord = document.getElementById('currentWord');
