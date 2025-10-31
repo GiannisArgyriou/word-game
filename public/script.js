@@ -95,13 +95,14 @@ class CatchPhraseGame {
 
     createRoom() {
         const playerName = document.getElementById('playerName').value.trim();
+        const language = document.getElementById('languageSelect').value;
         if (!playerName) {
             this.showMessage('Please enter your name', 'error');
             return;
         }
 
         this.playerName = playerName;
-        this.socket.emit('createRoom', { playerName });
+        this.socket.emit('createRoom', { playerName, language });
     }
 
     showJoinForm() {
@@ -236,6 +237,19 @@ class CatchPhraseGame {
         // Update difficulty
         document.querySelectorAll('.btn-difficulty').forEach(btn => btn.classList.remove('active'));
         document.querySelector(`[data-difficulty="${this.gameState.difficulty}"]`).classList.add('active');
+
+        // Show selected language in waiting room (optional)
+        if (this.gameState.language) {
+            let langLabel = document.getElementById('roomLanguageLabel');
+            if (!langLabel) {
+                langLabel = document.createElement('div');
+                langLabel.id = 'roomLanguageLabel';
+                langLabel.style.margin = '10px 0';
+                langLabel.style.fontWeight = '600';
+                document.getElementById('waitingScreen').insertBefore(langLabel, document.getElementById('playersList'));
+            }
+            langLabel.textContent = `Language: ${this.gameState.language === 'es' ? 'Español' : 'English'}`;
+        }
     }
 
     updateGameScreen() {
