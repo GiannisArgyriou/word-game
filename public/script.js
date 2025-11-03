@@ -117,58 +117,42 @@ class CatchPhraseGame {
         document.getElementById('createRoomBtn').style.display = 'none';
     }
 
-    // Get translation for current word using word sets
+    // Get translation for current word using merged word sets
     getTranslation(word, language) {
         // These must match the server's word sets
-        const WORD_CATEGORIES = {
-            en: {
-                easy: [
-                    'pizza', 'dog', 'car', 'book', 'phone', 'tree', 'water', 'music', 'house', 'coffee',
-                    'beach', 'movie', 'friend', 'school', 'birthday', 'vacation', 'chocolate', 'garden',
-                    'summer', 'winter', 'football', 'basketball', 'computer', 'restaurant', 'hospital'
-                ],
-                medium: [
-                    'adventure', 'telescope', 'volcano', 'butterfly', 'democracy', 'university', 'newspaper',
-                    'elephant', 'dinosaur', 'skeleton', 'laboratory', 'microphone', 'refrigerator', 'calculator',
-                    'photograph', 'mechanic', 'architect', 'detective', 'magician', 'scientist', 'astronaut',
-                    'thunderstorm', 'rainbow', 'mountain', 'lighthouse'
-                ],
-                hard: [
-                    'philosophical', 'entrepreneur', 'metamorphosis', 'consciousness', 'photosynthesis',
-                    'extraterrestrial', 'archaeological', 'cryptocurrency', 'biodegradable', 'sophisticated',
-                    'revolutionary', 'extraordinary', 'incomprehensible', 'interdisciplinary', 'neuroscience',
-                    'procrastination', 'claustrophobia', 'serendipity', 'antidisestablishmentarianism',
-                    'incompatibility', 'superintendent', 'telecommunications', 'anthropomorphic', 'epistemology'
-                ]
-            },
-            es: {
-                easy: [
-                    'pizza', 'perro', 'coche', 'libro', 'teléfono', 'árbol', 'agua', 'música', 'casa', 'café',
-                    'playa', 'película', 'amigo', 'escuela', 'cumpleaños', 'vacaciones', 'chocolate', 'jardín',
-                    'verano', 'invierno', 'fútbol', 'baloncesto', 'computadora', 'restaurante', 'hospital'
-                ],
-                medium: [
-                    'aventura', 'telescopio', 'volcán', 'mariposa', 'democracia', 'universidad', 'periódico',
-                    'elefante', 'dinosaurio', 'esqueleto', 'laboratorio', 'micrófono', 'refrigerador', 'calculadora',
-                    'fotografía', 'mecánico', 'arquitecto', 'detective', 'mago', 'científico', 'astronauta',
-                    'tormenta', 'arcoíris', 'montaña', 'faro'
-                ],
-                hard: [
-                    'filosófico', 'emprendedor', 'metamorfosis', 'conciencia', 'fotosíntesis',
-                    'extraterrestre', 'arqueológico', 'criptomoneda', 'biodegradable', 'sofisticado',
-                    'revolucionario', 'extraordinario', 'incomprensible', 'interdisciplinario', 'neurociencia',
-                    'procrastinación', 'claustrofobia', 'serendipia', 'antidisestablishmentarianismo',
-                    'incompatibilidad', 'superintendente', 'telecomunicaciones', 'antropomórfico', 'epistemología'
-                ]
-            }
-        };
-        // Find translation by matching index in word sets
+        const WORDS_EN = [
+            'pizza', 'dog', 'car', 'book', 'phone', 'tree', 'water', 'music', 'house', 'coffee',
+            'beach', 'movie', 'friend', 'school', 'birthday', 'vacation', 'chocolate', 'garden',
+            'summer', 'winter', 'football', 'basketball', 'computer', 'restaurant', 'hospital',
+            'adventure', 'telescope', 'volcano', 'butterfly', 'democracy', 'university', 'newspaper',
+            'elephant', 'dinosaur', 'skeleton', 'laboratory', 'microphone', 'refrigerator', 'calculator',
+            'photograph', 'mechanic', 'architect', 'detective', 'magician', 'scientist', 'astronaut',
+            'thunderstorm', 'rainbow', 'mountain', 'lighthouse',
+            'philosophical', 'entrepreneur', 'metamorphosis', 'consciousness', 'photosynthesis',
+            'extraterrestrial', 'archaeological', 'cryptocurrency', 'biodegradable', 'sophisticated',
+            'revolutionary', 'extraordinary', 'incomprehensible', 'interdisciplinary', 'neuroscience',
+            'procrastination', 'claustrophobia', 'serendipity', 'antidisestablishmentarianism',
+            'incompatibility', 'superintendent', 'telecommunications', 'anthropomorphic', 'epistemology'
+        ];
+        const WORDS_ES = [
+            'pizza', 'perro', 'coche', 'libro', 'teléfono', 'árbol', 'agua', 'música', 'casa', 'café',
+            'playa', 'película', 'amigo', 'escuela', 'cumpleaños', 'vacaciones', 'chocolate', 'jardín',
+            'verano', 'invierno', 'fútbol', 'baloncesto', 'computadora', 'restaurante', 'hospital',
+            'aventura', 'telescopio', 'volcán', 'mariposa', 'democracia', 'universidad', 'periódico',
+            'elefante', 'dinosaurio', 'esqueleto', 'laboratorio', 'micrófono', 'refrigerador', 'calculadora',
+            'fotografía', 'mecánico', 'arquitecto', 'detective', 'mago', 'científico', 'astronauta',
+            'tormenta', 'arcoíris', 'montaña', 'faro',
+            'filosófico', 'emprendedor', 'metamorfosis', 'conciencia', 'fotosíntesis',
+            'extraterrestre', 'arqueológico', 'criptomoneda', 'biodegradable', 'sofisticado',
+            'revolucionario', 'extraordinario', 'incomprensible', 'interdisciplinario', 'neurociencia',
+            'procrastinación', 'claustrofobia', 'serendipia', 'antidisestablishmentarianismo',
+            'incompatibilidad', 'superintendente', 'telecomunicaciones', 'antropomórfico', 'epistemología'
+        ];
         let fromLang = language;
         let toLang = language === 'en' ? 'es' : 'en';
-        let difficulty = this.gameState.difficulty || 'easy';
-        let idx = WORD_CATEGORIES[fromLang][difficulty].indexOf(word);
+        let idx = (fromLang === 'en' ? WORDS_EN.indexOf(word) : WORDS_ES.indexOf(word));
         if (idx !== -1) {
-            return WORD_CATEGORIES[toLang][difficulty][idx];
+            return toLang === 'en' ? WORDS_EN[idx] : WORDS_ES[idx];
         }
         return null;
     }
@@ -197,12 +181,7 @@ class CatchPhraseGame {
         this.goHome();
     }
 
-    changeDifficulty(difficulty) {
-        document.querySelectorAll('.btn-difficulty').forEach(btn => btn.classList.remove('active'));
-        document.querySelector(`[data-difficulty="${difficulty}"]`).classList.add('active');
-        
-        this.socket.emit('changeDifficulty', { difficulty });
-    }
+    // Difficulty selection removed
 
     correctGuess() {
         this.socket.emit('correctGuess');
@@ -289,9 +268,7 @@ class CatchPhraseGame {
             startBtn.disabled = true;
         }
 
-        // Update difficulty
-        document.querySelectorAll('.btn-difficulty').forEach(btn => btn.classList.remove('active'));
-        document.querySelector(`[data-difficulty="${this.gameState.difficulty}"]`).classList.add('active');
+    // Difficulty selection removed
 
         // Show selected language in waiting room (optional)
         if (this.gameState.language) {

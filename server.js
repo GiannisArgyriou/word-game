@@ -17,49 +17,35 @@ const PORT = process.env.PORT || 3000;
 // Serve static files
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Demo word sets for the game
-const WORD_CATEGORIES = {
-  en: {
-    easy: [
-      'pizza', 'dog', 'car', 'book', 'phone', 'tree', 'water', 'music', 'house', 'coffee',
-      'beach', 'movie', 'friend', 'school', 'birthday', 'vacation', 'chocolate', 'garden',
-      'summer', 'winter', 'football', 'basketball', 'computer', 'restaurant', 'hospital'
-    ],
-    medium: [
-      'adventure', 'telescope', 'volcano', 'butterfly', 'democracy', 'university', 'newspaper',
-      'elephant', 'dinosaur', 'skeleton', 'laboratory', 'microphone', 'refrigerator', 'calculator',
-      'photograph', 'mechanic', 'architect', 'detective', 'magician', 'scientist', 'astronaut',
-      'thunderstorm', 'rainbow', 'mountain', 'lighthouse'
-    ],
-    hard: [
-      'philosophical', 'entrepreneur', 'metamorphosis', 'consciousness', 'photosynthesis',
-      'extraterrestrial', 'archaeological', 'cryptocurrency', 'biodegradable', 'sophisticated',
-      'revolutionary', 'extraordinary', 'incomprehensible', 'interdisciplinary', 'neuroscience',
-      'procrastination', 'claustrophobia', 'serendipity', 'antidisestablishmentarianism',
-      'incompatibility', 'superintendent', 'telecommunications', 'anthropomorphic', 'epistemology'
-    ]
-  },
-  es: {
-    easy: [
-      'pizza', 'perro', 'coche', 'libro', 'teléfono', 'árbol', 'agua', 'música', 'casa', 'café',
-      'playa', 'película', 'amigo', 'escuela', 'cumpleaños', 'vacaciones', 'chocolate', 'jardín',
-      'verano', 'invierno', 'fútbol', 'baloncesto', 'computadora', 'restaurante', 'hospital'
-    ],
-    medium: [
-      'aventura', 'telescopio', 'volcán', 'mariposa', 'democracia', 'universidad', 'periódico',
-      'elefante', 'dinosaurio', 'esqueleto', 'laboratorio', 'micrófono', 'refrigerador', 'calculadora',
-      'fotografía', 'mecánico', 'arquitecto', 'detective', 'mago', 'científico', 'astronauta',
-      'tormenta', 'arcoíris', 'montaña', 'faro'
-    ],
-    hard: [
-      'filosófico', 'emprendedor', 'metamorfosis', 'conciencia', 'fotosíntesis',
-      'extraterrestre', 'arqueológico', 'criptomoneda', 'biodegradable', 'sofisticado',
-      'revolucionario', 'extraordinario', 'incomprensible', 'interdisciplinario', 'neurociencia',
-      'procrastinación', 'claustrofobia', 'serendipia', 'antidisestablishmentarianismo',
-      'incompatibilidad', 'superintendente', 'telecomunicaciones', 'antropomórfico', 'epistemología'
-    ]
-  }
-};
+// Merged word sets for the game
+const WORDS_EN = [
+  'pizza', 'dog', 'car', 'book', 'phone', 'tree', 'water', 'music', 'house', 'coffee',
+  'beach', 'movie', 'friend', 'school', 'birthday', 'vacation', 'chocolate', 'garden',
+  'summer', 'winter', 'football', 'basketball', 'computer', 'restaurant', 'hospital',
+  'adventure', 'telescope', 'volcano', 'butterfly', 'democracy', 'university', 'newspaper',
+  'elephant', 'dinosaur', 'skeleton', 'laboratory', 'microphone', 'refrigerator', 'calculator',
+  'photograph', 'mechanic', 'architect', 'detective', 'magician', 'scientist', 'astronaut',
+  'thunderstorm', 'rainbow', 'mountain', 'lighthouse',
+  'philosophical', 'entrepreneur', 'metamorphosis', 'consciousness', 'photosynthesis',
+  'extraterrestrial', 'archaeological', 'cryptocurrency', 'biodegradable', 'sophisticated',
+  'revolutionary', 'extraordinary', 'incomprehensible', 'interdisciplinary', 'neuroscience',
+  'procrastination', 'claustrophobia', 'serendipity', 'antidisestablishmentarianism',
+  'incompatibility', 'superintendent', 'telecommunications', 'anthropomorphic', 'epistemology'
+];
+const WORDS_ES = [
+  'pizza', 'perro', 'coche', 'libro', 'teléfono', 'árbol', 'agua', 'música', 'casa', 'café',
+  'playa', 'película', 'amigo', 'escuela', 'cumpleaños', 'vacaciones', 'chocolate', 'jardín',
+  'verano', 'invierno', 'fútbol', 'baloncesto', 'computadora', 'restaurante', 'hospital',
+  'aventura', 'telescopio', 'volcán', 'mariposa', 'democracia', 'universidad', 'periódico',
+  'elefante', 'dinosaurio', 'esqueleto', 'laboratorio', 'micrófono', 'refrigerador', 'calculadora',
+  'fotografía', 'mecánico', 'arquitecto', 'detective', 'mago', 'científico', 'astronauta',
+  'tormenta', 'arcoíris', 'montaña', 'faro',
+  'filosófico', 'emprendedor', 'metamorfosis', 'conciencia', 'fotosíntesis',
+  'extraterrestre', 'arqueológico', 'criptomoneda', 'biodegradable', 'sofisticado',
+  'revolucionario', 'extraordinario', 'incomprensible', 'interdisciplinario', 'neurociencia',
+  'procrastinación', 'claustrofobia', 'serendipia', 'antidisestablishmentarianismo',
+  'incompatibilidad', 'superintendente', 'telecomunicaciones', 'antropomórfico', 'epistemología'
+];
 
 // Game state management
 const rooms = new Map();
@@ -79,7 +65,7 @@ class GameRoom {
     this.timer = null;
     this.wordIndex = 0;
     this.usedWords = new Set();
-    this.difficulty = 'easy';
+  // Difficulty removed
     this.language = language;
     this.io = ioInstance; // Store io instance for broadcasting
   }
@@ -120,7 +106,7 @@ class GameRoom {
   }
 
   getNewWord() {
-  const wordPool = WORD_CATEGORIES[this.language][this.difficulty];
+  const wordPool = this.language === 'en' ? WORDS_EN : WORDS_ES;
     let newWord;
     
     // If we've used all words, reset the used words set
@@ -266,7 +252,7 @@ class GameRoom {
       currentWord: this.currentWord,
       timeLeft: this.timeLeft,
       totalScore: this.totalScore, // Team score instead of individual scores
-      difficulty: this.difficulty,
+  // difficulty removed
       language: this.language
     };
   }
@@ -375,17 +361,7 @@ io.on('connection', (socket) => {
     }
   });
 
-  socket.on('changeDifficulty', (data) => {
-    const playerData = players.get(socket.id);
-    if (playerData) {
-      const room = rooms.get(playerData.roomId);
-      if (room && room.gameState === 'waiting') {
-        room.difficulty = data.difficulty;
-        // Send updated game state to all players
-        room.broadcastGameState();
-      }
-    }
-  });
+  // Difficulty change removed
 
   socket.on('disconnect', () => {
     console.log('User disconnected:', socket.id);
