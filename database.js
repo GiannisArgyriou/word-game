@@ -27,6 +27,7 @@ async function initDatabase() {
   }
 
   try {
+    console.log('🔄 Attempting to create database table...');
     await pool.query(`
       CREATE TABLE IF NOT EXISTS test_results (
         id SERIAL PRIMARY KEY,
@@ -41,8 +42,10 @@ async function initDatabase() {
     
     databaseAvailable = true;
     console.log('✅ Database table initialized successfully');
+    console.log('✅ Test results table ready');
   } catch (error) {
     console.error('❌ Error initializing database:', error.message);
+    console.error('❌ Full error:', error);
     console.log('⚠️  App will continue but test results will only be logged to console');
   }
 }
