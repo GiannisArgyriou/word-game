@@ -48,7 +48,28 @@ h1 {
     font-size: 2.5rem;
     font-weight: 700;
     color: #4a5568;
-    margin-bottom: 10px;
+}
+
+/* Language Select Styling */
+#languageSelect {
+    padding: 8px;
+    border-radius: 8px;
+    border: 1px solid #a0aec0;
+    background: #f7fafc;
+    color: #2d3748;
+    font-size: 1rem;
+    font-family: 'Poppins', sans-serif;
+    font-weight: 500;
+    margin-top: 4px;
+    margin-bottom: 4px;
+    box-shadow: 0 2px 8px rgba(100, 100, 200, 0.08);
+    transition: border-color 0.2s, box-shadow 0.2s;
+    outline: none;
+    cursor: pointer;
+}
+#languageSelect:focus {
+    border-color: #667eea;
+    box-shadow: 0 0 0 2px #667eea33;
 }
 
 h2 {
