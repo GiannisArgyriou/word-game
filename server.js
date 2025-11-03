@@ -65,6 +65,8 @@ class GameRoom {
     this.timer = null;
     this.wordIndex = 0;
     this.usedWords = new Set();
+    this.wordsShownInGame = []; // Track all words shown during the game
+    this.testAnswers = new Map(); // Store test answers for each player
   // Difficulty removed
     this.language = language;
     this.io = ioInstance; // Store io instance for broadcasting
@@ -120,6 +122,11 @@ class GameRoom {
     
     this.usedWords.add(newWord);
     this.currentWord = newWord;
+    
+    // Track word for post-game test
+    if (!this.wordsShownInGame.includes(newWord)) {
+      this.wordsShownInGame.push(newWord);
+    }
   }
 
   startTimer() {
@@ -232,6 +239,8 @@ class GameRoom {
   endGame() {
     this.gameState = 'finished';
     this.stopTimer();
+    // Broadcast final state with words for test
+    this.broadcastGameState();
   }
 
   stopGame() {
@@ -239,6 +248,8 @@ class GameRoom {
     this.currentRound = 0;
     this.stopTimer();
     this.totalScore = 0; // Reset team score
+    this.wordsShownInGame = []; // Reset words list
+    this.testAnswers.clear(); // Clear test answers
   }
 
   getGameState() {
@@ -253,7 +264,8 @@ class GameRoom {
       timeLeft: this.timeLeft,
       totalScore: this.totalScore, // Team score instead of individual scores
   // difficulty removed
-      language: this.language
+      language: this.language,
+      wordsShownInGame: this.wordsShownInGame // Words for post-game test
     };
   }
 
@@ -362,6 +374,26 @@ io.on('connection', (socket) => {
   });
 
   // Difficulty change removed
+
+  socket.on('submitTest', (data) => {
+    const playerData = players.get(socket.id);
+    if (playerData) {
+      const room = rooms.get(playerData.roomId);
+      if (room && room.gameState === 'finished') {
+        // Store test answers
+        room.testAnswers.set(socket.id, {
+          playerName: playerData.playerName,
+          answers: data.answers,
+          timestamp: new Date().toISOString()
+        });
+        
+        console.log(`Test submitted by ${playerData.playerName} in room ${playerData.roomId}:`, data.answers);
+        
+        // Send confirmation
+        socket.emit('testSubmitted', { success: true });
+      }
+    }
+  });
 
   socket.on('disconnect', () => {
     console.log('User disconnected:', socket.id);

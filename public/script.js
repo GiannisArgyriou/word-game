@@ -32,8 +32,14 @@ class CatchPhraseGame {
         document.getElementById('skipBtn').addEventListener('click', () => this.skipWord());
 
         // Game over screen events
-        document.getElementById('playAgainBtn').addEventListener('click', () => this.playAgain());
-        document.getElementById('homeBtn').addEventListener('click', () => this.goHome());
+        document.getElementById('continueToTestBtn').addEventListener('click', () => this.showTest());
+
+        // Test screen events
+        document.getElementById('submitTestBtn').addEventListener('click', () => this.submitTest());
+        
+        // Test complete screen events
+        document.getElementById('playAgainAfterTestBtn').addEventListener('click', () => this.playAgain());
+        document.getElementById('homeAfterTestBtn').addEventListener('click', () => this.goHome());
 
         // Enter key support
         document.getElementById('playerName').addEventListener('keypress', (e) => {
@@ -85,6 +91,13 @@ class CatchPhraseGame {
 
         this.socket.on('error', (data) => {
             this.showMessage(data.message, 'error');
+        });
+
+        this.socket.on('testSubmitted', (data) => {
+            if (data.success) {
+                this.showScreen('testCompleteScreen');
+                this.showMessage('Your answers have been recorded!', 'success');
+            }
         });
 
         this.socket.on('disconnect', () => {
@@ -565,6 +578,57 @@ class CatchPhraseGame {
 
         performanceDisplay.textContent = performanceMessage;
         performanceDisplay.className = `performance-message ${performanceClass}`;
+    }
+
+    showTest() {
+        if (!this.gameState || !this.gameState.wordsShownInGame) {
+            this.showMessage('No words available for test', 'error');
+            return;
+        }
+
+        this.showScreen('testScreen');
+        this.generateTestQuestions();
+    }
+
+    generateTestQuestions() {
+        const testQuestions = document.getElementById('testQuestions');
+        testQuestions.innerHTML = '';
+
+        const words = this.gameState.wordsShownInGame;
+        const otherLanguage = this.gameState.language === 'en' ? 'Spanish' : 'English';
+
+        words.forEach((word, index) => {
+            const questionDiv = document.createElement('div');
+            questionDiv.className = 'test-question';
+
+            const label = document.createElement('label');
+            label.className = 'test-question-label';
+            label.innerHTML = `${index + 1}. Translate <span class="test-word">"${word}"</span> to ${otherLanguage}:`;
+
+            const input = document.createElement('input');
+            input.type = 'text';
+            input.className = 'test-input';
+            input.id = `test-input-${index}`;
+            input.placeholder = 'Enter translation...';
+            input.dataset.word = word;
+
+            questionDiv.appendChild(label);
+            questionDiv.appendChild(input);
+            testQuestions.appendChild(questionDiv);
+        });
+    }
+
+    submitTest() {
+        const words = this.gameState.wordsShownInGame;
+        const answers = {};
+
+        words.forEach((word, index) => {
+            const input = document.getElementById(`test-input-${index}`);
+            answers[word] = input ? input.value.trim() : '';
+        });
+
+        // Send answers to server
+        this.socket.emit('submitTest', { answers });
     }
 
     showMessage(message, type = 'info') {

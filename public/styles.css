@@ -487,3 +487,59 @@ p {
         padding: 10px 20px;
     }
 }
+
+/* Translation Test Styles */
+.test-container {
+    margin: 30px 0;
+    max-height: 500px;
+    overflow-y: auto;
+}
+
+.test-question {
+    margin: 20px 0;
+    padding: 20px;
+    background: #f7fafc;
+    border-radius: 15px;
+    text-align: left;
+}
+
+.test-question-label {
+    font-weight: 600;
+    color: #4a5568;
+    font-size: 1.1rem;
+    margin-bottom: 10px;
+    display: block;
+}
+
+.test-word {
+    color: #667eea;
+    font-weight: 700;
+    font-size: 1.3rem;
+}
+
+.test-input {
+    width: 100%;
+    padding: 12px;
+    border: 2px solid #e2e8f0;
+    border-radius: 10px;
+    font-size: 1rem;
+    transition: border-color 0.3s ease;
+    margin-top: 10px;
+}
+
+.test-input:focus {
+    outline: none;
+    border-color: #667eea;
+}
+
+.test-actions {
+    margin: 30px 0;
+}
+
+.test-complete-actions {
+    margin: 30px 0;
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    flex-wrap: wrap;
+}
