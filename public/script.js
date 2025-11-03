@@ -315,31 +315,39 @@ class CatchPhraseGame {
 
         // Only show for describer, during playing
         if (this.gameState.isDescriber && this.gameState.gameState === 'playing') {
-            if (this.translationTimeout) clearTimeout(this.translationTimeout);
-            this.translationTimeout = setTimeout(() => {
-                // Only show if still describing
-                if (this.currentScreen === 'gameScreen' && this.gameState.isDescriber && this.gameState.gameState === 'playing') {
-                    const controls = document.querySelector('.game-controls');
-                    const btn = document.createElement('button');
-                    btn.id = 'showTranslationBtn';
-                    btn.className = 'btn btn-info';
-                    btn.textContent = 'Show Translation';
-                    btn.style.marginTop = '12px';
-                    btn.onclick = () => {
-                        const translation = this.getTranslation(this.gameState.currentWord, this.gameState.language);
-                        let transText = document.createElement('div');
-                        transText.id = 'translationText';
-                        transText.className = 'translation-text';
-                        transText.style.marginTop = '10px';
-                        transText.style.fontSize = '1.1rem';
-                        transText.style.color = '#4299e1';
-                        transText.textContent = translation ? `Translation: ${translation}` : 'Translation not found.';
-                        btn.parentNode.insertBefore(transText, btn.nextSibling);
-                        btn.disabled = true;
-                    };
-                    controls.parentNode.insertBefore(btn, controls.nextSibling);
-                }
-            }, 5000);
+                if (this.translationTimeout) clearTimeout(this.translationTimeout);
+                const controls = document.querySelector('.game-controls');
+                const btn = document.createElement('button');
+                btn.id = 'showTranslationBtn';
+                btn.className = 'btn btn-info';
+                btn.textContent = 'Show Translation (5s)';
+                btn.style.marginTop = '12px';
+                btn.disabled = true;
+                let countdown = 5;
+                btn.onclick = () => {
+                    const translation = this.getTranslation(this.gameState.currentWord, this.gameState.language);
+                    let transText = document.createElement('div');
+                    transText.id = 'translationText';
+                    transText.className = 'translation-text';
+                    transText.style.marginTop = '10px';
+                    transText.style.fontSize = '1.1rem';
+                    transText.style.color = '#4299e1';
+                    transText.textContent = translation ? `Translation: ${translation}` : 'Translation not found.';
+                    btn.parentNode.insertBefore(transText, btn.nextSibling);
+                    btn.disabled = true;
+                };
+                controls.parentNode.insertBefore(btn, controls.nextSibling);
+                // Countdown logic
+                this.translationTimeout = setInterval(() => {
+                    countdown--;
+                    if (countdown > 0) {
+                        btn.textContent = `Show Translation (${countdown}s)`;
+                    } else {
+                        btn.textContent = 'Show Translation';
+                        btn.disabled = false;
+                        clearInterval(this.translationTimeout);
+                    }
+                }, 1000);
         } else {
             if (this.translationTimeout) clearTimeout(this.translationTimeout);
         }

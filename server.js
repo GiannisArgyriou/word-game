@@ -63,7 +63,7 @@ class GameRoom {
     this.roomId = roomId;
     this.players = [];
     this.currentRound = 0;
-    this.maxRounds = 3;
+      this.maxRounds = 4;
     this.currentPlayerIndex = 0;
     this.gameState = 'waiting'; // waiting, playing, finished
     this.currentWord = '';
