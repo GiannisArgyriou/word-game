@@ -2,6 +2,7 @@ const express = require('express');
 const http = require('http');
 const socketIo = require('socket.io');
 const path = require('path');
+const { initDatabase, saveTestResult } = require('./database');
 
 const app = express();
 const server = http.createServer(app);
@@ -13,6 +14,12 @@ const io = socketIo(server, {
 });
 
 const PORT = process.env.PORT || 3000;
+
+// Initialize database
+initDatabase().catch(err => {
+  console.error('Failed to initialize database:', err);
+  console.log('⚠️  App will continue but test results will not be saved to database');
+});
 
 // Serve static files
 app.use(express.static(path.join(__dirname, 'public')));
@@ -381,13 +388,22 @@ io.on('connection', (socket) => {
       const room = rooms.get(playerData.roomId);
       if (room && room.gameState === 'finished') {
         // Store test answers
-        room.testAnswers.set(socket.id, {
+        const testResult = {
           playerName: playerData.playerName,
+          roomId: playerData.roomId,
+          language: room.language,
           answers: data.answers,
           timestamp: new Date().toISOString()
-        });
+        };
+        
+        room.testAnswers.set(socket.id, testResult);
         
         console.log(`Test submitted by ${playerData.playerName} in room ${playerData.roomId}:`, data.answers);
+        
+        // Save to database (async, won't block response)
+        saveTestResult(testResult).catch(err => {
+          // Errors are already logged in database.js
+        });
         
         // Send confirmation
         socket.emit('testSubmitted', { success: true });
