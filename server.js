@@ -112,6 +112,8 @@ class GameRoom {
     this.timeLeft = 60;
     this.getNewWord();
     this.startTimer();
+    // Broadcast new game state with new word
+    this.broadcastGameState();
   }
 
   getNewWord() {
@@ -180,11 +182,8 @@ class GameRoom {
   endRound() {
     this.stopTimer();
     
-    // Immediately switch players and update UI
+    // Immediately switch players
     this.currentPlayerIndex = (this.currentPlayerIndex + 1) % 2;
-    
-    // Send immediate update to show role switch
-    this.broadcastGameState();
     
     if (this.currentRound < this.maxRounds) {
       this.currentRound++;
