@@ -468,6 +468,17 @@ class CatchPhraseGame {
         if (!transitionElement) return;
         
         transitionElement.querySelector('h2').textContent = 'Round Complete!';
+        
+        // Display the words from the completed round
+        const wordsList = document.getElementById('roundWordsList');
+        if (wordsList && data.roundWords && data.roundWords.length > 0) {
+            wordsList.innerHTML = data.roundWords.map(word => 
+                `<span class="round-word-item">${word}</span>`
+            ).join('');
+        } else if (wordsList) {
+            wordsList.innerHTML = '<span class="round-word-item">No words this round</span>';
+        }
+        
         transitionElement.querySelector('p').innerHTML = 
             `<strong>${data.nextPlayer}</strong> will describe next round.<br>Starting in <span id="nextRoundTimer">${data.countdown}</span>...`;
         

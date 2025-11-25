@@ -73,6 +73,7 @@ class GameRoom {
     this.wordIndex = 0;
     this.usedWords = new Set();
     this.wordsShownInGame = []; // Track all words shown during the game
+    this.currentRoundWords = []; // Track words in the current round
     this.testAnswers = new Map(); // Store test answers for each player
   // Difficulty removed
     this.language = language;
@@ -110,6 +111,7 @@ class GameRoom {
 
   startRound() {
     this.timeLeft = 60;
+    this.currentRoundWords = []; // Clear words for new round
     this.getNewWord();
     this.startTimer();
     // Broadcast new game state with new word
@@ -136,6 +138,9 @@ class GameRoom {
     if (!this.wordsShownInGame.includes(newWord)) {
       this.wordsShownInGame.push(newWord);
     }
+    
+    // Track word for current round
+    this.currentRoundWords.push(newWord);
   }
 
   startTimer() {
@@ -182,14 +187,17 @@ class GameRoom {
   endRound() {
     this.stopTimer();
     
+    // Store the words from this round before clearing
+    const roundWords = [...this.currentRoundWords];
+    
     // Immediately switch players
     this.currentPlayerIndex = (this.currentPlayerIndex + 1) % 2;
     
     if (this.currentRound < this.maxRounds) {
       this.currentRound++;
       
-      // Show round transition with countdown
-      this.showRoundTransition(() => {
+      // Show round transition with countdown and words from completed round
+      this.showRoundTransition(roundWords, () => {
         if (this.gameState === 'playing') {
           this.startRound();
         }
@@ -199,18 +207,19 @@ class GameRoom {
     }
   }
 
-  showRoundTransition(callback) {
-    // Broadcast round transition state
+  showRoundTransition(roundWords, callback) {
+    // Broadcast round transition state with words from completed round
     this.players.forEach(player => {
       this.io.to(player.id).emit('roundTransition', {
         message: `Round ${this.currentRound} starting soon...`,
         nextPlayer: this.players[this.currentPlayerIndex].name,
-        countdown: 3
+        countdown: 10,
+        roundWords: roundWords
       });
     });
 
-    // Countdown from 3 to 1
-    let countdown = 3;
+    // Countdown from 10 to 1
+    let countdown = 10;
     const countdownTimer = setInterval(() => {
       countdown--;
       
@@ -219,7 +228,8 @@ class GameRoom {
           this.io.to(player.id).emit('roundTransition', {
             message: `Round ${this.currentRound} starting soon...`,
             nextPlayer: this.players[this.currentPlayerIndex].name,
-            countdown: countdown
+            countdown: countdown,
+            roundWords: roundWords
           });
         });
       } else {
