@@ -787,11 +787,12 @@ class CatchPhraseGame {
             const isSpanish = spanishWords.includes(word);
             const wordLanguage = isEnglish ? 'en' : (isSpanish ? 'es' : null);
             
-            // Only show words in the OTHER language
+            // Only show words in the OTHER language (not native language)
             return wordLanguage !== null && wordLanguage !== nativeLanguage;
         });
 
-        const otherLanguage = nativeLanguage === 'en' ? 'Spanish' : 'English';
+        // Words shown are in OTHER language, so translate TO native language
+        const nativeLanguageName = nativeLanguage === 'en' ? 'English' : 'Spanish';
 
         filteredWords.forEach((word, index) => {
             const questionDiv = document.createElement('div');
@@ -799,7 +800,7 @@ class CatchPhraseGame {
 
             const label = document.createElement('label');
             label.className = 'test-question-label';
-            label.innerHTML = `${index + 1}. Translate <span class="test-word">"${word}"</span> to ${otherLanguage}:`;
+            label.innerHTML = `${index + 1}. Translate <span class="test-word">"${word}"</span> to ${nativeLanguageName}:`;
 
             const input = document.createElement('input');
             input.type = 'text';
