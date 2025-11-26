@@ -141,42 +141,114 @@ class CatchPhraseGame {
 
     // Get translation for current word using merged word sets
     getTranslation(word, language) {
-        // These must match the server's word sets
-        const WORDS_EN = [
-            'pizza', 'dog', 'car', 'book', 'phone', 'tree', 'water', 'music', 'house', 'coffee',
-            'beach', 'movie', 'friend', 'school', 'birthday', 'vacation', 'chocolate', 'garden',
-            'summer', 'winter', 'football', 'basketball', 'computer', 'restaurant', 'hospital',
-            'adventure', 'telescope', 'volcano', 'butterfly', 'democracy', 'university', 'newspaper',
-            'elephant', 'dinosaur', 'skeleton', 'laboratory', 'microphone', 'refrigerator', 'calculator',
-            'photograph', 'mechanic', 'architect', 'detective', 'magician', 'scientist', 'astronaut',
-            'thunderstorm', 'rainbow', 'mountain', 'lighthouse',
-            'philosophical', 'entrepreneur', 'metamorphosis', 'consciousness', 'photosynthesis',
-            'extraterrestrial', 'archaeological', 'cryptocurrency', 'biodegradable', 'sophisticated',
-            'revolutionary', 'extraordinary', 'incomprehensible', 'interdisciplinary', 'neuroscience',
-            'procrastination', 'claustrophobia', 'serendipity', 'antidisestablishmentarianism',
-            'incompatibility', 'superintendent', 'telecommunications', 'anthropomorphic', 'epistemology'
-        ];
-        const WORDS_ES = [
-            'pizza', 'perro', 'coche', 'libro', 'teléfono', 'árbol', 'agua', 'música', 'casa', 'café',
-            'playa', 'película', 'amigo', 'escuela', 'cumpleaños', 'vacaciones', 'chocolate', 'jardín',
-            'verano', 'invierno', 'fútbol', 'baloncesto', 'computadora', 'restaurante', 'hospital',
-            'aventura', 'telescopio', 'volcán', 'mariposa', 'democracia', 'universidad', 'periódico',
-            'elefante', 'dinosaurio', 'esqueleto', 'laboratorio', 'micrófono', 'refrigerador', 'calculadora',
-            'fotografía', 'mecánico', 'arquitecto', 'detective', 'mago', 'científico', 'astronauta',
-            'tormenta', 'arcoíris', 'montaña', 'faro',
-            'filosófico', 'emprendedor', 'metamorfosis', 'conciencia', 'fotosíntesis',
-            'extraterrestre', 'arqueológico', 'criptomoneda', 'biodegradable', 'sofisticado',
-            'revolucionario', 'extraordinario', 'incomprensible', 'interdisciplinario', 'neurociencia',
-            'procrastinación', 'claustrofobia', 'serendipia', 'antidisestablishmentarianismo',
-            'incompatibilidad', 'superintendente', 'telecomunicaciones', 'antropomórfico', 'epistemología'
-        ];
-        let fromLang = language;
-        let toLang = language === 'en' ? 'es' : 'en';
-        let idx = (fromLang === 'en' ? WORDS_EN.indexOf(word) : WORDS_ES.indexOf(word));
-        if (idx !== -1) {
-            return toLang === 'en' ? WORDS_EN[idx] : WORDS_ES[idx];
-        }
-        return null;
+        // Translation mappings (must match server)
+        const TRANSLATIONS = {
+            // English to Spanish
+            'River': 'Río', 
+            'Fridge': 'Nevera / Refrigerador / Frigorífico', 
+            'Lecture': 'Conferencia / Charla / Clase', 
+            'Mower': 'Cortacésped / Cortadora de césped', 
+            'Propel': 'Propulsionar / Impulsar',
+            'Journal': 'Diario / Revista / Periódico', 
+            'Waiter': 'Camarero / Mesero', 
+            'Bakery': 'Panadería / Pastelería', 
+            'Gravy': 'Salsa / Jugo de carne', 
+            'Cupholder': 'Posavasos / Portavasos',
+            'Lawn': 'Césped / Prado / Jardín', 
+            'Sip': 'Sorbo / Trago pequeño', 
+            'Mutual': 'Mutuo / Recíproco', 
+            'Stale': 'Rancio / Viejo / Duro', 
+            'Nozzle': 'Boquilla / Pitorro',
+            'Bat': 'Murciélago / Bate', 
+            'Cider': 'Sidra', 
+            'Ashes': 'Cenizas', 
+            'Stable': 'Establo / Caballeriza / Estable', 
+            'Chew': 'Masticar / Mascar',
+            'Tart': 'Tarta / Ácido / Agrio', 
+            'Leftovers': 'Restos / Sobras', 
+            'Contemporary': 'Contemporáneo / Moderno', 
+            'Mumble': 'Murmurar / Mascullar', 
+            'Brew': 'Preparar / Hacer / Fermentar',
+            'Caterpillar': 'Oruga', 
+            'Dressing': 'Aderezo / Aliño / Vendaje', 
+            'Garlic': 'Ajo', 
+            'Ranch': 'Rancho / Granja / Hacienda', 
+            'Peel': 'Pelar / Cáscara',
+            'Pear': 'Pera', 
+            'Chop': 'Trocear / Cortar / Picar', 
+            'Pastrami': 'Pastrami / Carne curada', 
+            'Grip': 'Agarrar / Agarre / Empuñadura', 
+            'Invoice': 'Factura',
+            'Stew': 'Estofado / Guiso', 
+            'Break': 'Romper / Descanso / Pausa', 
+            'Lunch': 'Almuerzo / Comida', 
+            'Teapot': 'Tetera', 
+            'Doorbell': 'Timbre / Campanilla',
+            'Mug': 'Taza / Jarro', 
+            'Corn': 'Maíz / Elote / Choclo', 
+            'Billionaire': 'Multimillonario / Billonario', 
+            'Dishwasher': 'Lavavajillas / Lavaplatos', 
+            'Honey': 'Miel',
+            'Plant': 'Planta / Plantar', 
+            'Pomegranate': 'Granada', 
+            'Asparagus': 'Espárrago', 
+            'Diet': 'Dieta / Régimen', 
+            'Lake': 'Lago',
+            // Spanish to English
+            'Camarero': 'Waiter / Server', 
+            'Rancio': 'Stale / Rancid', 
+            'Malvavisco': 'Marshmallow', 
+            'Pimienta': 'Pepper / Black pepper', 
+            'Restos': 'Leftovers / Remains / Scraps',
+            'Sorbo': 'Sip / Small drink', 
+            'Melocotón': 'Peach', 
+            'Trufa': 'Truffle', 
+            'Ajo': 'Garlic', 
+            'Colador': 'Strainer / Colander / Sieve',
+            'Aderezo': 'Dressing / Seasoning / Condiment', 
+            'Sidra': 'Cider / Apple cider', 
+            'Nata': 'Cream / Heavy cream', 
+            'Tarta': 'Tart / Cake / Pie', 
+            'Veterinario': 'Veterinarian / Vet',
+            'Pera': 'Pear', 
+            'Pavo': 'Turkey', 
+            'Sopa': 'Soup', 
+            'Oruga': 'Caterpillar', 
+            'Mezcla': 'Mix / Mixture / Blend',
+            'Tetera': 'Teapot / Kettle', 
+            'Calorías': 'Calories', 
+            'Boquilla': 'Nozzle / Mouthpiece', 
+            'Cenizas': 'Ashes', 
+            'Estofado': 'Stew / Braised dish',
+            'Miel': 'Honey', 
+            'Masticar': 'Chew / Chewing', 
+            'Rancho': 'Ranch / Farm', 
+            'Barbacoa': 'Barbecue / Grill / BBQ', 
+            'Mantequilla': 'Butter',
+            'Piña': 'Pineapple', 
+            'Espárrago': 'Asparagus', 
+            'Propulsionar': 'Propel / Push forward', 
+            'Timbre': 'Doorbell / Bell / Buzzer', 
+            'Factura': 'Invoice / Bill / Receipt',
+            'Pelar': 'Peel / To peel', 
+            'Pensar': 'Think / To think', 
+            'Palomitas': 'Popcorn', 
+            'Trocear': 'Chop / Cut into pieces', 
+            'Cortacésped': 'Mower / Lawn mower',
+            'Chicle': 'Gum / Chewing gum', 
+            'Oído': 'Ear / Hearing', 
+            'Murmurar': 'Mumble / Murmur / Whisper', 
+            'Panadería': 'Bakery / Bread shop', 
+            'Ternera': 'Veal / Beef',
+            'Murciélago': 'Bat (animal)', 
+            'Establo': 'Stable / Barn', 
+            'Posavasos': 'Cupholder / Coaster', 
+            'Romper': 'Break / To break / Tear', 
+            'Lago': 'Lake'
+        };
+        
+        // Look up translation directly from mapping
+        return TRANSLATIONS[word] || null;
     }
 
     hideJoinForm() {
