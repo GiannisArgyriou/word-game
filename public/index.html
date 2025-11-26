@@ -20,13 +20,6 @@
                 <div class="input-group">
                     <input type="text" id="playerName" placeholder="Enter your name" maxlength="20">
                 </div>
-                <div class="input-group">
-                    <label for="languageSelect" style="font-weight:600;">Language:</label>
-                    <select id="languageSelect">
-                        <option value="en">English</option>
-                        <option value="es">Español</option>
-                    </select>
-                </div>
                 <button id="createRoomBtn" class="btn btn-primary">Create Room</button>
                 <button id="joinRoomBtn" class="btn btn-secondary">Join Room</button>
             </div>
@@ -125,7 +118,13 @@
             </div>
             
             <div class="game-over-actions">
-                <button id="continueToTestBtn" class="btn btn-primary">Continue to Translation Test</button>
+                <div class="language-selection">
+                    <h3>Select Your Native Language:</h3>
+                    <div class="language-buttons">
+                        <button id="selectEnglishBtn" class="btn btn-secondary">English</button>
+                        <button id="selectSpanishBtn" class="btn btn-secondary">Español</button>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -150,6 +149,11 @@
             <div class="game-header">
                 <h1>✅ Test Complete!</h1>
                 <p>Your answers have been recorded</p>
+            </div>
+            
+            <div class="play-again-status">
+                <h3 id="playAgainStatus">Click Play Again to start a new game</h3>
+                <p id="playAgainInfo"></p>
             </div>
             
             <div class="test-complete-actions">

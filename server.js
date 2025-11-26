@@ -259,7 +259,7 @@ const rooms = new Map();
 const players = new Map();
 
 class GameRoom {
-  constructor(roomId, ioInstance, language = 'en') {
+  constructor(roomId, ioInstance) {
     this.roomId = roomId;
     this.players = [];
     this.currentRound = 0;
@@ -267,16 +267,21 @@ class GameRoom {
     this.currentPlayerIndex = 0;
     this.gameState = 'waiting'; // waiting, playing, finished
     this.currentWord = '';
+    this.currentWordLanguage = 'en'; // Track current word's language
     this.timeLeft = 60;
     this.totalScore = 0; // Cooperative scoring - total words guessed by team
     this.timer = null;
     this.wordIndex = 0;
-    this.usedWords = new Set();
+    this.usedWordsEN = new Set(); // Track used English words across entire session
+    this.usedWordsES = new Set(); // Track used Spanish words across entire session
+    this.availableWordsEN = [...WORDS_EN]; // Available English words pool
+    this.availableWordsES = [...WORDS_ES]; // Available Spanish words pool
+    this.nextLanguage = 'en'; // Alternate between 'en' and 'es'
     this.wordsShownInGame = []; // Track all correctly guessed words during the game
     this.currentRoundWords = []; // Track correctly guessed words in the current round
     this.testAnswers = new Map(); // Store test answers for each player
-  // Difficulty removed
-    this.language = language;
+    this.playerNativeLanguages = new Map(); // Store each player's native language
+    this.playAgainVotes = new Set(); // Track which players voted to play again
     this.io = ioInstance; // Store io instance for broadcasting
   }
 
@@ -319,20 +324,39 @@ class GameRoom {
   }
 
   getNewWord() {
-  const wordPool = this.language === 'en' ? WORDS_EN : WORDS_ES;
-    let newWord;
+    // Determine which language to use (alternating)
+    const useLanguage = this.nextLanguage;
+    const wordPool = useLanguage === 'en' ? this.availableWordsEN : this.availableWordsES;
     
-    // If we've used all words, reset the used words set
-    if (this.usedWords.size >= wordPool.length) {
-      this.usedWords.clear();
+    // If no words available in this pool, refill it
+    if (wordPool.length === 0) {
+      if (useLanguage === 'en') {
+        this.availableWordsEN = [...WORDS_EN];
+        this.usedWordsEN.clear();
+      } else {
+        this.availableWordsES = [...WORDS_ES];
+        this.usedWordsES.clear();
+      }
     }
     
-    do {
-      newWord = wordPool[Math.floor(Math.random() * wordPool.length)];
-    } while (this.usedWords.has(newWord));
+    // Pick random word from available pool
+    const availablePool = useLanguage === 'en' ? this.availableWordsEN : this.availableWordsES;
+    const randomIndex = Math.floor(Math.random() * availablePool.length);
+    const newWord = availablePool[randomIndex];
     
-    this.usedWords.add(newWord);
+    // Remove word from available pool and add to used set
+    availablePool.splice(randomIndex, 1);
+    if (useLanguage === 'en') {
+      this.usedWordsEN.add(newWord);
+    } else {
+      this.usedWordsES.add(newWord);
+    }
+    
     this.currentWord = newWord;
+    this.currentWordLanguage = useLanguage;
+    
+    // Alternate language for next word
+    this.nextLanguage = useLanguage === 'en' ? 'es' : 'en';
   }
 
   startTimer() {
@@ -363,10 +387,15 @@ class GameRoom {
     }
   }
 
+  removeAccents(str) {
+    // Normalize string and remove diacritical marks (accents)
+    return str.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  }
+
   checkGuess(guess) {
-    // Normalize both strings: lowercase, trim, remove extra spaces
-    const normalizedGuess = guess.toLowerCase().trim().replace(/\s+/g, ' ');
-    const normalizedWord = this.currentWord.toLowerCase().trim().replace(/\s+/g, ' ');
+    // Normalize both strings: lowercase, trim, remove extra spaces, and remove accents
+    const normalizedGuess = this.removeAccents(guess.toLowerCase().trim().replace(/\s+/g, ' '));
+    const normalizedWord = this.removeAccents(this.currentWord.toLowerCase().trim().replace(/\s+/g, ' '));
     
     if (normalizedGuess === normalizedWord) {
       this.totalScore++; // Increment team score
@@ -473,6 +502,9 @@ class GameRoom {
     this.totalScore = 0; // Reset team score
     this.wordsShownInGame = []; // Reset words list
     this.testAnswers.clear(); // Clear test answers
+    this.playerNativeLanguages.clear(); // Clear language selections
+    this.playAgainVotes.clear(); // Clear play again votes
+    // Keep word pools intact across sessions (usedWordsEN, usedWordsES, availableWordsEN, availableWordsES)
   }
 
   getGameState() {
@@ -484,12 +516,14 @@ class GameRoom {
       maxRounds: this.maxRounds,
       currentPlayer: this.players[this.currentPlayerIndex],
       currentWord: this.currentWord,
+      currentWordLanguage: this.currentWordLanguage,
       currentWordImage: WORD_IMAGES[this.currentWord] || null,
       timeLeft: this.timeLeft,
       totalScore: this.totalScore, // Team score instead of individual scores
-  // difficulty removed
-      language: this.language,
-      wordsShownInGame: this.wordsShownInGame // Words for post-game test
+      wordsShownInGame: this.wordsShownInGame, // Words for post-game test
+      playAgainVotes: Array.from(this.playAgainVotes),
+      englishWords: WORDS_EN, // Send word lists for client-side language detection
+      spanishWords: WORDS_ES
     };
   }
 
@@ -530,8 +564,7 @@ io.on('connection', (socket) => {
 
   socket.on('createRoom', (data) => {
     const roomId = generateRoomId();
-    const language = data.language || 'en';
-    const room = new GameRoom(roomId, io, language);
+    const room = new GameRoom(roomId, io);
     
     if (room.addPlayer(socket.id, data.playerName)) {
       rooms.set(roomId, room);
@@ -540,7 +573,7 @@ io.on('connection', (socket) => {
       socket.join(roomId);
       socket.emit('roomCreated', { roomId, gameState: room.getGameStateForPlayer(socket.id) });
       
-      console.log(`Room ${roomId} created by ${data.playerName} (Language: ${language})`);
+      console.log(`Room ${roomId} created by ${data.playerName}`);
     }
   });
 
@@ -601,18 +634,30 @@ io.on('connection', (socket) => {
     }
   });
 
-  // Difficulty change removed
+  socket.on('setNativeLanguage', (data) => {
+    const playerData = players.get(socket.id);
+    if (playerData) {
+      const room = rooms.get(playerData.roomId);
+      if (room && room.gameState === 'finished') {
+        room.playerNativeLanguages.set(socket.id, data.nativeLanguage);
+        socket.emit('nativeLanguageSet', { success: true });
+      }
+    }
+  });
 
   socket.on('submitTest', (data) => {
     const playerData = players.get(socket.id);
     if (playerData) {
       const room = rooms.get(playerData.roomId);
       if (room && room.gameState === 'finished') {
+        // Get player's native language and test language
+        const nativeLanguage = data.nativeLanguage;
+        
         // Store test answers
         const testResult = {
           playerName: playerData.playerName,
           roomId: playerData.roomId,
-          language: room.language,
+          nativeLanguage: nativeLanguage,
           answers: data.answers,
           timestamp: new Date().toISOString()
         };
@@ -628,6 +673,29 @@ io.on('connection', (socket) => {
         
         // Send confirmation
         socket.emit('testSubmitted', { success: true });
+      }
+    }
+  });
+
+  socket.on('votePlayAgain', () => {
+    const playerData = players.get(socket.id);
+    if (playerData) {
+      const room = rooms.get(playerData.roomId);
+      if (room) {
+        room.playAgainVotes.add(socket.id);
+        
+        const votesNeeded = 2 - room.playAgainVotes.size;
+        
+        // Broadcast vote status to all players
+        room.players.forEach(player => {
+          player.socket.emit('playAgainVote', { votesNeeded });
+        });
+        
+        // If both players voted, restart the game
+        if (room.playAgainVotes.size === 2 && room.players.length === 2) {
+          room.playAgainVotes.clear();
+          room.startGame();
+        }
       }
     }
   });

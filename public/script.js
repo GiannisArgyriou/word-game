@@ -36,8 +36,9 @@ class CatchPhraseGame {
             if (e.key === 'Enter') this.submitGuess();
         });
 
-        // Game over screen events
-        document.getElementById('continueToTestBtn').addEventListener('click', () => this.showTest());
+        // Game over screen events - native language selection
+        document.getElementById('selectEnglishBtn').addEventListener('click', () => this.selectNativeLanguage('en'));
+        document.getElementById('selectSpanishBtn').addEventListener('click', () => this.selectNativeLanguage('es'));
 
         // Test screen events
         document.getElementById('submitTestBtn').addEventListener('click', () => this.submitTest());
@@ -75,6 +76,15 @@ class CatchPhraseGame {
         this.socket.on('gameUpdate', (gameState) => {
             this.gameState = gameState;
             this.updateGameDisplay();
+            
+            // Reset play again button when game starts
+            if (gameState.gameState === 'playing') {
+                const playAgainBtn = document.getElementById('playAgainAfterTestBtn');
+                if (playAgainBtn) {
+                    playAgainBtn.disabled = false;
+                    playAgainBtn.textContent = 'Play Again';
+                }
+            }
         });
 
         // Real-time timer updates
@@ -109,6 +119,19 @@ class CatchPhraseGame {
             }
         });
 
+        this.socket.on('playAgainVote', (data) => {
+            const playAgainStatus = document.getElementById('playAgainStatus');
+            const playAgainInfo = document.getElementById('playAgainInfo');
+            
+            if (data.votesNeeded === 0) {
+                playAgainStatus.textContent = 'Starting new game...';
+                playAgainInfo.textContent = '';
+            } else {
+                playAgainStatus.textContent = `${data.votesNeeded} player(s) need to vote`;
+                playAgainInfo.textContent = 'Waiting for all players to vote to play again...';
+            }
+        });
+
         this.socket.on('disconnect', () => {
             this.showMessage('Disconnected from server', 'error');
             this.goHome();
@@ -117,14 +140,13 @@ class CatchPhraseGame {
 
     createRoom() {
         const playerName = document.getElementById('playerName').value.trim();
-        const language = document.getElementById('languageSelect').value;
         if (!playerName) {
             this.showMessage('Please enter your name', 'error');
             return;
         }
 
         this.playerName = playerName;
-        this.socket.emit('createRoom', { playerName, language });
+        this.socket.emit('createRoom', { playerName });
     }
 
     showJoinForm() {
@@ -277,6 +299,13 @@ class CatchPhraseGame {
 
     // Difficulty selection removed
 
+    selectNativeLanguage(language) {
+        this.nativeLanguage = language;
+        this.socket.emit('setNativeLanguage', { language });
+        // Show test screen with filtered words
+        this.showTest(language);
+    }
+
     submitGuess() {
         const guessInput = document.getElementById('guessInput');
         const guess = guessInput.value.trim();
@@ -317,7 +346,9 @@ class CatchPhraseGame {
     }
 
     playAgain() {
-        this.socket.emit('startGame');
+        this.socket.emit('votePlayAgain');
+        document.getElementById('playAgainAfterTestBtn').disabled = true;
+        document.getElementById('playAgainAfterTestBtn').textContent = 'Waiting for other player...';
     }
 
     goHome() {
@@ -464,9 +495,9 @@ class CatchPhraseGame {
             if (this.translationTimeout) clearTimeout(this.translationTimeout);
         }
 
-        // Update word image
+        // Update word image - only show to describer, not guesser
         const wordImage = document.getElementById('wordImage');
-        if (this.gameState.currentWordImage) {
+        if (this.gameState.isDescriber && this.gameState.currentWordImage) {
             wordImage.src = `/images/${this.gameState.currentWordImage}`;
             wordImage.alt = this.gameState.currentWord;
             wordImage.style.display = 'block';
@@ -731,24 +762,38 @@ class CatchPhraseGame {
         performanceDisplay.className = `performance-message ${performanceClass}`;
     }
 
-    showTest() {
+    showTest(nativeLanguage) {
         if (!this.gameState || !this.gameState.wordsShownInGame) {
             this.showMessage('No words available for test', 'error');
             return;
         }
 
         this.showScreen('testScreen');
-        this.generateTestQuestions();
+        this.generateTestQuestions(nativeLanguage);
     }
 
-    generateTestQuestions() {
+    generateTestQuestions(nativeLanguage) {
         const testQuestions = document.getElementById('testQuestions');
         testQuestions.innerHTML = '';
 
-        const words = this.gameState.wordsShownInGame;
-        const otherLanguage = this.gameState.language === 'en' ? 'Spanish' : 'English';
+        // Filter words: show only words that are NOT in the player's native language
+        const allWords = this.gameState.wordsShownInGame;
+        const englishWords = this.gameState.englishWords || [];
+        const spanishWords = this.gameState.spanishWords || [];
+        
+        const filteredWords = allWords.filter(word => {
+            // Determine if this word is in English or Spanish by checking word lists
+            const isEnglish = englishWords.includes(word);
+            const isSpanish = spanishWords.includes(word);
+            const wordLanguage = isEnglish ? 'en' : (isSpanish ? 'es' : null);
+            
+            // Only show words in the OTHER language
+            return wordLanguage !== null && wordLanguage !== nativeLanguage;
+        });
 
-        words.forEach((word, index) => {
+        const otherLanguage = nativeLanguage === 'en' ? 'Spanish' : 'English';
+
+        filteredWords.forEach((word, index) => {
             const questionDiv = document.createElement('div');
             questionDiv.className = 'test-question';
 
@@ -770,16 +815,16 @@ class CatchPhraseGame {
     }
 
     submitTest() {
-        const words = this.gameState.wordsShownInGame;
+        const testInputs = document.querySelectorAll('.test-input');
         const answers = {};
 
-        words.forEach((word, index) => {
-            const input = document.getElementById(`test-input-${index}`);
-            answers[word] = input ? input.value.trim() : '';
+        testInputs.forEach(input => {
+            const word = input.dataset.word;
+            answers[word] = input.value.trim();
         });
 
-        // Send answers to server
-        this.socket.emit('submitTest', { answers });
+        // Send answers to server with native language
+        this.socket.emit('submitTest', { answers, nativeLanguage: this.nativeLanguage });
     }
 
     showMessage(message, type = 'info') {
