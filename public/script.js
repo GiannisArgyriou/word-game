@@ -464,6 +464,16 @@ class CatchPhraseGame {
             if (this.translationTimeout) clearTimeout(this.translationTimeout);
         }
 
+        // Update word image
+        const wordImage = document.getElementById('wordImage');
+        if (this.gameState.currentWordImage) {
+            wordImage.src = `/images/${this.gameState.currentWordImage}`;
+            wordImage.alt = this.gameState.currentWord;
+            wordImage.style.display = 'block';
+        } else {
+            wordImage.style.display = 'none';
+        }
+
         // Update word display based on player role
         const currentWord = document.getElementById('currentWord');
         const playerRole = document.getElementById('playerRole');
