@@ -72,8 +72,8 @@ class GameRoom {
     this.timer = null;
     this.wordIndex = 0;
     this.usedWords = new Set();
-    this.wordsShownInGame = []; // Track all words shown during the game
-    this.currentRoundWords = []; // Track words in the current round
+    this.wordsShownInGame = []; // Track all correctly guessed words during the game
+    this.currentRoundWords = []; // Track correctly guessed words in the current round
     this.testAnswers = new Map(); // Store test answers for each player
   // Difficulty removed
     this.language = language;
@@ -133,14 +133,6 @@ class GameRoom {
     
     this.usedWords.add(newWord);
     this.currentWord = newWord;
-    
-    // Track word for post-game test
-    if (!this.wordsShownInGame.includes(newWord)) {
-      this.wordsShownInGame.push(newWord);
-    }
-    
-    // Track word for current round
-    this.currentRoundWords.push(newWord);
   }
 
   startTimer() {
@@ -171,11 +163,26 @@ class GameRoom {
     }
   }
 
-  correctGuess() {
-    this.totalScore++; // Increment team score
-    this.getNewWord();
-    // Broadcast updated state immediately
-    this.broadcastGameState();
+  checkGuess(guess) {
+    // Normalize both strings: lowercase, trim, remove extra spaces
+    const normalizedGuess = guess.toLowerCase().trim().replace(/\s+/g, ' ');
+    const normalizedWord = this.currentWord.toLowerCase().trim().replace(/\s+/g, ' ');
+    
+    if (normalizedGuess === normalizedWord) {
+      this.totalScore++; // Increment team score
+      
+      // Track correctly guessed word for post-game test
+      if (!this.wordsShownInGame.includes(this.currentWord)) {
+        this.wordsShownInGame.push(this.currentWord);
+      }
+      
+      // Track correctly guessed word for current round
+      this.currentRoundWords.push(this.currentWord);
+      
+      this.getNewWord();
+      return { correct: true };
+    }
+    return { correct: false };
   }
 
   skipWord() {
@@ -367,13 +374,17 @@ io.on('connection', (socket) => {
     }
   });
 
-  socket.on('correctGuess', () => {
+  socket.on('checkGuess', (guess) => {
     const playerData = players.get(socket.id);
     if (playerData) {
       const room = rooms.get(playerData.roomId);
       if (room && room.gameState === 'playing') {
-        room.correctGuess();
-        // Game state is broadcast within correctGuess method
+        const result = room.checkGuess(guess);
+        socket.emit('guessResult', result);
+        if (result.correct) {
+          // Broadcast updated state to all players
+          room.broadcastGameState();
+        }
       }
     }
   });

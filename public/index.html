@@ -83,8 +83,13 @@
             </div>
             
             <div class="game-controls">
-                <button id="correctBtn" class="btn btn-success">✓ They Got It!</button>
-                <button id="skipBtn" class="btn btn-warning">Skip Word</button>
+                <div id="describerControls" class="describer-controls hidden">
+                    <button id="skipBtn" class="btn btn-warning">Skip Word</button>
+                </div>
+                <div id="guesserControls" class="guesser-controls hidden">
+                    <input type="text" id="guessInput" placeholder="Type your guess here..." autocomplete="off">
+                    <button id="submitGuessBtn" class="btn btn-primary">Submit Guess</button>
+                </div>
             </div>
             
             <div class="scores">

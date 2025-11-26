@@ -28,8 +28,13 @@ class CatchPhraseGame {
         });
 
         // Game screen events
-        document.getElementById('correctBtn').addEventListener('click', () => this.correctGuess());
+        document.getElementById('submitGuessBtn').addEventListener('click', () => this.submitGuess());
         document.getElementById('skipBtn').addEventListener('click', () => this.skipWord());
+        
+        // Enter key to submit guess
+        document.getElementById('guessInput').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') this.submitGuess();
+        });
 
         // Game over screen events
         document.getElementById('continueToTestBtn').addEventListener('click', () => this.showTest());
@@ -87,6 +92,10 @@ class CatchPhraseGame {
 
         this.socket.on('hideRoundTransition', () => {
             this.hideRoundTransition();
+        });
+        
+        this.socket.on('guessResult', (result) => {
+            this.handleGuessResult(result);
         });
 
         this.socket.on('error', (data) => {
@@ -196,12 +205,43 @@ class CatchPhraseGame {
 
     // Difficulty selection removed
 
-    correctGuess() {
-        this.socket.emit('correctGuess');
+    submitGuess() {
+        const guessInput = document.getElementById('guessInput');
+        const guess = guessInput.value.trim();
+        
+        if (guess) {
+            this.socket.emit('checkGuess', guess);
+        }
     }
 
     skipWord() {
         this.socket.emit('skipWord');
+    }
+    
+    handleGuessResult(result) {
+        const guessInput = document.getElementById('guessInput');
+        const guesserControls = document.getElementById('guesserControls');
+        
+        if (result.correct) {
+            // Clear input on correct guess
+            guessInput.value = '';
+            
+            // Show brief success feedback
+            guessInput.placeholder = '✓ Correct! Next word...';
+            guessInput.style.borderColor = '#48bb78';
+            setTimeout(() => {
+                guessInput.placeholder = 'Type your guess here...';
+                guessInput.style.borderColor = '';
+            }, 1000);
+        } else {
+            // Show brief error feedback
+            guessInput.style.borderColor = '#e53e3e';
+            guessInput.classList.add('shake');
+            setTimeout(() => {
+                guessInput.style.borderColor = '';
+                guessInput.classList.remove('shake');
+            }, 500);
+        }
     }
 
     playAgain() {
@@ -396,9 +436,13 @@ class CatchPhraseGame {
             existingMsg.remove();
         }
 
+        const describerControls = document.getElementById('describerControls');
+        const guesserControls = document.getElementById('guesserControls');
+        
         if (isDescriber) {
-            // Describer controls the game
-            controls.style.display = 'flex';
+            // Describer can only skip
+            describerControls.classList.remove('hidden');
+            guesserControls.classList.add('hidden');
             
             // Add helpful instruction for describer
             const instructionMsg = document.createElement('p');
@@ -418,8 +462,14 @@ class CatchPhraseGame {
             
             controls.parentNode.insertBefore(instructionMsg, controls);
         } else {
-            // Guesser just waits and listens
-            controls.style.display = 'none';
+            // Guesser types their guess
+            describerControls.classList.add('hidden');
+            guesserControls.classList.remove('hidden');
+            
+            // Clear and focus input
+            const guessInput = document.getElementById('guessInput');
+            guessInput.value = '';
+            guessInput.focus();
             
             // Remove describer instruction if exists
             const existingInstruction = controls.parentNode.querySelector('.describer-instruction');
