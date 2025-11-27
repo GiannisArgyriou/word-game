@@ -511,7 +511,8 @@ class CatchPhraseGame {
         
         if (this.gameState.isDescriber) {
             // Player is describing - can see word and control game
-            currentWord.textContent = this.gameState.currentWord.toUpperCase();
+            const languageFlag = this.gameState.currentWordLanguage === 'en' ? '🇬🇧' : '🇪🇸';
+            currentWord.innerHTML = `${languageFlag} ${this.gameState.currentWord.toUpperCase()}`;
             currentWord.style.fontSize = '3rem';
             currentWord.style.color = 'white';
             playerRole.textContent = `Describe this word to ${this.getOtherPlayerName()}!`;
@@ -738,28 +739,6 @@ class CatchPhraseGame {
         scoreDiv.appendChild(labelDiv);
         scoreDiv.appendChild(valueDiv);
         finalScoresDisplay.appendChild(scoreDiv);
-
-        // Display performance feedback
-        const performanceDisplay = document.getElementById('performanceDisplay');
-        let performanceMessage = '';
-        let performanceClass = '';
-
-        if (totalScore >= 50) {
-            performanceMessage = "🏆 Amazing teamwork! You're word masters!";
-            performanceClass = 'excellent';
-        } else if (totalScore >= 30) {
-            performanceMessage = "🎉 Great job! Solid communication skills!";
-            performanceClass = 'good';
-        } else if (totalScore >= 15) {
-            performanceMessage = "👍 Good effort! Keep practicing together!";
-            performanceClass = 'okay';
-        } else {
-            performanceMessage = "💪 Practice makes perfect! Try again!";
-            performanceClass = 'needs-improvement';
-        }
-
-        performanceDisplay.textContent = performanceMessage;
-        performanceDisplay.className = `performance-message ${performanceClass}`;
     }
 
     showTest(nativeLanguage) {

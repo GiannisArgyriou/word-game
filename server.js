@@ -276,7 +276,6 @@ class GameRoom {
     this.usedWordsES = new Set(); // Track used Spanish words across entire session
     this.availableWordsEN = [...WORDS_EN]; // Available English words pool
     this.availableWordsES = [...WORDS_ES]; // Available Spanish words pool
-    this.nextLanguage = 'en'; // Alternate between 'en' and 'es'
     this.wordsShownInGame = []; // Track all correctly guessed words during the game
     this.currentRoundWords = []; // Track correctly guessed words in the current round
     this.testAnswers = new Map(); // Store test answers for each player
@@ -324,8 +323,10 @@ class GameRoom {
   }
 
   getNewWord() {
-    // Determine which language to use (alternating)
-    const useLanguage = this.nextLanguage;
+    // Determine which language to use based on current round
+    // First half of rounds: English only
+    // Second half of rounds: Spanish only
+    const useLanguage = this.currentRound <= Math.floor(this.maxRounds / 2) ? 'en' : 'es';
     const wordPool = useLanguage === 'en' ? this.availableWordsEN : this.availableWordsES;
     
     // If no words available in this pool, refill it
@@ -354,9 +355,6 @@ class GameRoom {
     
     this.currentWord = newWord;
     this.currentWordLanguage = useLanguage;
-    
-    // Alternate language for next word
-    this.nextLanguage = useLanguage === 'en' ? 'es' : 'en';
   }
 
   startTimer() {
