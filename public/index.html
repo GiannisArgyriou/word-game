@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Catch Phrase - Online Word Game</title>
+    <title>Guess the word!</title>
     <link rel="stylesheet" href="styles.css">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
 </head>
@@ -12,13 +12,22 @@
         <!-- Home Screen -->
         <div id="homeScreen" class="screen active">
             <div class="game-header">
-                <h1>🎯 Catch Phrase</h1>
-                <p>Describe as many words as you can before time runs out!</p>
+                <h1>🎯 Guess the word! </h1>
+                <p class="rules-explanation">
+                    Describe as many words to your partner as possible within the time limit, <strong>without saying the words themselves or their direct translations!</strong><br>
+                    For example, if you are describing the word <em>'apple'</em>, you cannot say <em>'apple'</em>, <em>'apples'</em>, or <em>'manzana'</em>.
+                    If you don't know what the word you are describing means, you can click on the 'Show translation' button to see its translation in the other language.<br><br>
+                    There are <strong>8 rounds total</strong> in the game where each of you will be taking turns describing and guessing the words.<br>
+                    The first 4 rounds will involve <strong>English words only</strong>, while the rest will involve <strong>only Spanish words</strong>.<br>
+                    Try to describe using the current language of the target word, but you are also allowed to use the target language.<br><br>
+                    At the end of the game, you will select your native language and then complete an appropriate translation test.<br>
+                    <strong>Good luck and have fun!</strong>
+                </p>
             </div>
             
             <div class="menu-options">
                 <div class="input-group">
-                    <input type="text" id="playerName" placeholder="Enter your name" maxlength="20">
+                    <input type="text" id="playerName" placeholder="Enter your tandemMOOC username" maxlength="20">
                 </div>
                 <button id="createRoomBtn" class="btn btn-primary">Create Room</button>
                 <button id="joinRoomBtn" class="btn btn-secondary">Join Room</button>

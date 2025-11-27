@@ -1,4 +1,4 @@
-# Catch Phrase - Online Word Game
+# Guess the word! - Online Word Game
 
 A real-time multiplayer word game inspired by Catch Phrase. Describe as many words as you can before time runs out!
 

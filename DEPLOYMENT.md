@@ -1,4 +1,4 @@
-# 🎯 Catch Phrase - Online Word Game
+# 🎯 Guess the word!
 
 A real-time multiplayer word game for 2 players with bilingual support (English/Spanish) and post-game translation tests.
 

@@ -7,7 +7,7 @@
 
 body {
     font-family: 'Poppins', sans-serif;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, #000078 0%, #73edff 100%);
     color: #333;
     min-height: 100vh;
     display: flex;
@@ -17,7 +17,7 @@ body {
 
 .container {
     width: 100%;
-    max-width: 600px;
+    max-width: 740px;
     margin: 0 auto;
     padding: 20px;
     position: relative;
@@ -68,8 +68,8 @@ h1 {
     cursor: pointer;
 }
 #languageSelect:focus {
-    border-color: #667eea;
-    box-shadow: 0 0 0 2px #667eea33;
+    border-color: #000078;
+    box-shadow: 0 0 0 2px #00007833;
 }
 
 h2 {
@@ -123,7 +123,7 @@ p {
 }
 
 .btn-primary {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, #000078 0%, #73edff 100%);
     color: white;
 }
 
@@ -144,7 +144,7 @@ p {
 
 .input-group input:focus {
     outline: none;
-    border-color: #667eea;
+    border-color: #000078;
 }
 
 /* Game Header */
@@ -234,7 +234,7 @@ p {
 .word-display {
     margin: 40px 0;
     padding: 40px 20px;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, #000078 0%, #73edff 100%);
     border-radius: 20px;
     color: white;
     min-height: 150px;
@@ -319,7 +319,7 @@ p {
 
 #guessInput:focus {
     outline: none;
-    border-color: #667eea;
+    border-color: #000078;
     box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
 }
 
@@ -366,7 +366,7 @@ p {
 .score-value {
     font-size: 1.5rem;
     font-weight: 700;
-    color: #667eea;
+    color: #000078;
 }
 
 /* Round Transition */
@@ -381,7 +381,7 @@ p {
     box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
     z-index: 1000;
     text-align: center;
-    border: 3px solid #667eea;
+    border: 3px solid #000078;
     min-width: 300px;
 }
 
@@ -390,7 +390,7 @@ p {
 }
 
 .round-transition h2 {
-    color: #667eea;
+    color: #000078;
     margin-bottom: 20px;
     font-size: 1.8rem;
 }
@@ -419,7 +419,7 @@ p {
 }
 
 .round-word-item {
-    background: #667eea;
+    background: #000078;
     color: white;
     padding: 6px 12px;
     border-radius: 6px;
@@ -435,7 +435,7 @@ p {
 }
 
 .round-transition strong {
-    color: #667eea;
+    color: #000078;
     font-weight: 700;
 }
 
@@ -462,7 +462,7 @@ p {
 
 /* Team Score Styling */
 .team-score, .team-final-score {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, #000078 0%, #73edff 100%);
     color: white;
 }
 
@@ -624,7 +624,7 @@ p {
 }
 
 .test-word {
-    color: #667eea;
+    color: #000078;
     font-weight: 700;
     font-size: 1.3rem;
 }
@@ -641,7 +641,7 @@ p {
 
 .test-input:focus {
     outline: none;
-    border-color: #667eea;
+    border-color: #000078;
 }
 
 .test-actions {
