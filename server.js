@@ -263,12 +263,12 @@ class GameRoom {
     this.roomId = roomId;
     this.players = [];
     this.currentRound = 0;
-      this.maxRounds = 4;
+      this.maxRounds = 8;
     this.currentPlayerIndex = 0;
     this.gameState = 'waiting'; // waiting, playing, finished
     this.currentWord = '';
     this.currentWordLanguage = 'en'; // Track current word's language
-    this.timeLeft = 60;
+    this.timeLeft = 90;
     this.totalScore = 0; // Cooperative scoring - total words guessed by team
     this.timer = null;
     this.wordIndex = 0;
@@ -314,7 +314,7 @@ class GameRoom {
   }
 
   startRound() {
-    this.timeLeft = 60;
+    this.timeLeft = 90;
     this.currentRoundWords = []; // Clear words for new round
     this.getNewWord();
     this.startTimer();
