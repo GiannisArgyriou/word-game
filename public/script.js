@@ -463,10 +463,10 @@ class CatchPhraseGame {
                 const btn = document.createElement('button');
                 btn.id = 'showTranslationBtn';
                 btn.className = 'btn btn-info';
-                btn.textContent = 'Show Translation (5s)';
+                btn.textContent = 'Show Translation (3s)';
                 btn.style.marginTop = '12px';
                 btn.disabled = true;
-                let countdown = 5;
+                let countdown = 3;
                 btn.onclick = () => {
                     const translation = this.getTranslation(this.gameState.currentWord, this.gameState.language);
                     let transText = document.createElement('div');

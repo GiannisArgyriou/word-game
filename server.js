@@ -307,6 +307,11 @@ class GameRoom {
       this.gameState = 'playing';
       this.currentRound = 1;
       this.currentPlayerIndex = 0;
+      this.playAgainVotes.clear(); // Clear votes when starting new game
+      this.playerNativeLanguages.clear(); // Clear language selections for new game
+      this.testAnswers.clear(); // Clear previous test answers
+      this.wordsShownInGame = []; // Reset words list for new game
+      this.totalScore = 0; // Reset score for new game
       this.startRound();
       return true;
     }
@@ -655,7 +660,7 @@ io.on('connection', (socket) => {
         const testResult = {
           playerName: playerData.playerName,
           roomId: playerData.roomId,
-          nativeLanguage: nativeLanguage,
+          language: nativeLanguage,
           answers: data.answers,
           timestamp: new Date().toISOString()
         };
@@ -686,7 +691,7 @@ io.on('connection', (socket) => {
         
         // Broadcast vote status to all players
         room.players.forEach(player => {
-          player.socket.emit('playAgainVote', { votesNeeded });
+          io.to(player.id).emit('playAgainVote', { votesNeeded });
         });
         
         // If both players voted, restart the game
