@@ -35,9 +35,16 @@ async function initDatabase() {
         room_id VARCHAR(10) NOT NULL,
         language VARCHAR(5) NOT NULL,
         answers JSONB NOT NULL,
+        score INTEGER DEFAULT 0,
         timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
+    `);
+    
+    // Add score column if it doesn't exist (for existing databases)
+    await pool.query(`
+      ALTER TABLE test_results 
+      ADD COLUMN IF NOT EXISTS score INTEGER DEFAULT 0
     `);
     
     databaseAvailable = true;
@@ -59,8 +66,8 @@ async function saveTestResult(testResult) {
 
   try {
     const query = `
-      INSERT INTO test_results (player_name, room_id, language, answers, timestamp)
-      VALUES ($1, $2, $3, $4, $5)
+      INSERT INTO test_results (player_name, room_id, language, answers, score, timestamp)
+      VALUES ($1, $2, $3, $4, $5, $6)
       RETURNING id
     `;
     
@@ -69,6 +76,7 @@ async function saveTestResult(testResult) {
       testResult.roomId,
       testResult.language,
       JSON.stringify(testResult.answers),
+      testResult.score || 0,
       testResult.timestamp
     ];
     

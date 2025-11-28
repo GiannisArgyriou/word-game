@@ -662,12 +662,13 @@ io.on('connection', (socket) => {
           roomId: playerData.roomId,
           language: nativeLanguage,
           answers: data.answers,
+          score: room.totalScore,
           timestamp: new Date().toISOString()
         };
         
         room.testAnswers.set(socket.id, testResult);
         
-        console.log(`Test submitted by ${playerData.playerName} in room ${playerData.roomId}:`, data.answers);
+        console.log(`Test submitted by ${playerData.playerName} in room ${playerData.roomId} - Score: ${room.totalScore}:`, data.answers);
         
         // Save to database (async, won't block response)
         saveTestResult(testResult).catch(err => {
