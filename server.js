@@ -268,7 +268,7 @@ class GameRoom {
     this.gameState = 'waiting'; // waiting, playing, finished
     this.currentWord = '';
     this.currentWordLanguage = 'en'; // Track current word's language
-    this.timeLeft = 90;
+    this.timeLeft = 120;
     this.totalScore = 0; // Cooperative scoring - total words guessed by team
     this.timer = null;
     this.wordIndex = 0;
@@ -276,7 +276,7 @@ class GameRoom {
     this.usedWordsES = new Set(); // Track used Spanish words across entire session
     this.availableWordsEN = [...WORDS_EN]; // Available English words pool
     this.availableWordsES = [...WORDS_ES]; // Available Spanish words pool
-    this.wordsShownInGame = []; // Track all correctly guessed words during the game
+    this.wordsShownInGame = []; // Track all words shown during the game (for post-game test)
     this.currentRoundWords = []; // Track correctly guessed words in the current round
     this.testAnswers = new Map(); // Store test answers for each player
     this.playerNativeLanguages = new Map(); // Store each player's native language
@@ -319,7 +319,7 @@ class GameRoom {
   }
 
   startRound() {
-    this.timeLeft = 90;
+    this.timeLeft = 120;
     this.currentRoundWords = []; // Clear words for new round
     this.getNewWord();
     this.startTimer();
@@ -360,6 +360,11 @@ class GameRoom {
     
     this.currentWord = newWord;
     this.currentWordLanguage = useLanguage;
+    
+    // Track all words shown in game for post-game test (not just correctly guessed)
+    if (!this.wordsShownInGame.includes(newWord)) {
+      this.wordsShownInGame.push(newWord);
+    }
   }
 
   startTimer() {
@@ -402,11 +407,6 @@ class GameRoom {
     
     if (normalizedGuess === normalizedWord) {
       this.totalScore++; // Increment team score
-      
-      // Track correctly guessed word for post-game test
-      if (!this.wordsShownInGame.includes(this.currentWord)) {
-        this.wordsShownInGame.push(this.currentWord);
-      }
       
       // Track correctly guessed word for current round
       this.currentRoundWords.push(this.currentWord);

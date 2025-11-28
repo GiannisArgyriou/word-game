@@ -462,7 +462,7 @@ class CatchPhraseGame {
                 const controls = document.querySelector('.game-controls');
                 const btn = document.createElement('button');
                 btn.id = 'showTranslationBtn';
-                btn.className = 'btn btn-info';
+                btn.className = 'btn btn-success';
                 btn.textContent = 'Show Translation (3s)';
                 btn.style.marginTop = '12px';
                 btn.disabled = true;
