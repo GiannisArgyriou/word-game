@@ -127,6 +127,15 @@ p {
     color: white;
 }
 
+.btn-danger {
+    background: linear-gradient(135deg, #e53e3e 0%, #fc8181 100%);
+    color: white;
+}
+
+.btn-danger:hover {
+    background: linear-gradient(135deg, #c53030 0%, #f56565 100%);
+}
+
 /* Input Groups */
 .input-group {
     margin: 20px 0;

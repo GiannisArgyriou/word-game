@@ -479,7 +479,8 @@ class CatchPhraseGame {
                     btn.parentNode.insertBefore(transText, btn.nextSibling);
                     btn.disabled = true;
                 };
-                controls.parentNode.insertBefore(btn, controls.nextSibling);
+                // Insert before controls instead of after
+                controls.parentNode.insertBefore(btn, controls);
                 // Countdown logic
                 this.translationTimeout = setInterval(() => {
                     countdown--;
