@@ -71,11 +71,16 @@ async function saveTestResult(testResult) {
       RETURNING id
     `;
     
+    // Store wordsEncountered in the answers field if provided
+    const answersData = testResult.wordsEncountered 
+      ? { wordsEncountered: testResult.wordsEncountered, translations: testResult.answers || {} }
+      : testResult.answers;
+    
     const values = [
       testResult.playerName,
       testResult.roomId,
       testResult.language,
-      JSON.stringify(testResult.answers),
+      JSON.stringify(answersData),
       testResult.score || 0,
       testResult.timestamp
     ];

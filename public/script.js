@@ -36,16 +36,8 @@ class CatchPhraseGame {
             if (e.key === 'Enter') this.submitGuess();
         });
 
-        // Game over screen events - native language selection
-        document.getElementById('selectEnglishBtn').addEventListener('click', () => this.selectNativeLanguage('en'));
-        document.getElementById('selectSpanishBtn').addEventListener('click', () => this.selectNativeLanguage('es'));
-
-        // Test screen events
-        document.getElementById('submitTestBtn').addEventListener('click', () => this.submitTest());
-        
-        // Test complete screen events
-        document.getElementById('playAgainAfterTestBtn').addEventListener('click', () => this.playAgain());
-        document.getElementById('homeAfterTestBtn').addEventListener('click', () => this.goHome());
+        // Game over screen events - play again button
+        document.getElementById('playAgainBtn').addEventListener('click', () => this.votePlayAgain());
 
         // Enter key support
         document.getElementById('playerName').addEventListener('keypress', (e) => {
@@ -79,7 +71,7 @@ class CatchPhraseGame {
             
             // Reset play again button when game starts
             if (gameState.gameState === 'playing') {
-                const playAgainBtn = document.getElementById('playAgainAfterTestBtn');
+                const playAgainBtn = document.getElementById('playAgainBtn');
                 if (playAgainBtn) {
                     playAgainBtn.disabled = false;
                     playAgainBtn.textContent = 'Play Again';
@@ -112,23 +104,27 @@ class CatchPhraseGame {
             this.showMessage(data.message, 'error');
         });
 
-        this.socket.on('testSubmitted', (data) => {
-            if (data.success) {
-                this.showScreen('testCompleteScreen');
-                this.showMessage('Your answers have been recorded!', 'success');
-            }
-        });
-
         this.socket.on('playAgainVote', (data) => {
-            const playAgainStatus = document.getElementById('playAgainStatus');
-            const playAgainInfo = document.getElementById('playAgainInfo');
+            // Update game over screen status
+            const gameOverStatus = document.getElementById('gameOverPlayAgainStatus');
+            const gameOverInfo = document.getElementById('gameOverPlayAgainInfo');
             
             if (data.votesNeeded === 0) {
-                playAgainStatus.textContent = 'Starting new game...';
-                playAgainInfo.textContent = '';
+                if (gameOverStatus) gameOverStatus.textContent = 'Starting new game...';
+                if (gameOverInfo) gameOverInfo.textContent = '';
             } else {
-                playAgainStatus.textContent = `${data.votesNeeded} player(s) need to vote`;
-                playAgainInfo.textContent = 'Waiting for all players to vote to play again...';
+                if (gameOverStatus) gameOverStatus.textContent = `${data.votesNeeded} player(s) need to vote`;
+                if (gameOverInfo) gameOverInfo.textContent = 'Waiting for all players to vote to play again...';
+            }
+            
+            // Also update test complete screen if it exists (for backwards compatibility)
+            const testStatus = document.getElementById('playAgainStatus');
+            const testInfo = document.getElementById('playAgainInfo');
+            if (testStatus) {
+                testStatus.textContent = data.votesNeeded === 0 ? 'Starting new game...' : `${data.votesNeeded} player(s) need to vote`;
+            }
+            if (testInfo) {
+                testInfo.textContent = data.votesNeeded === 0 ? '' : 'Waiting for all players to vote to play again...';
             }
         });
 
@@ -141,7 +137,7 @@ class CatchPhraseGame {
     createRoom() {
         const playerName = document.getElementById('playerName').value.trim();
         if (!playerName) {
-            this.showMessage('Please enter your tandemMOOC username', 'error');
+            this.showMessage('Please enter your tandemMOOC nickname', 'error');
             return;
         }
 
@@ -152,7 +148,7 @@ class CatchPhraseGame {
     showJoinForm() {
         const playerName = document.getElementById('playerName').value.trim();
         if (!playerName) {
-            this.showMessage('Please enter your tandemMOOC username first', 'error');
+            this.showMessage('Please enter your tandemMOOC nickname first', 'error');
             return;
         }
         this.playerName = playerName;
@@ -163,110 +159,210 @@ class CatchPhraseGame {
 
     // Get translation for current word using merged word sets
     getTranslation(word, language) {
-        // Translation mappings (must match server)
+        // Translation mappings (must match server) - 100 words each
         const TRANSLATIONS = {
             // English to Spanish
-            'River': 'Río', 
-            'Fridge': 'Nevera / Refrigerador / Frigorífico', 
-            'Lecture': 'Conferencia / Charla / Clase', 
-            'Mower': 'Cortacésped / Cortadora de césped', 
-            'Propel': 'Propulsionar / Impulsar',
-            'Journal': 'Diario / Revista / Periódico', 
-            'Waiter': 'Camarero / Mesero', 
-            'Bakery': 'Panadería / Pastelería', 
-            'Gravy': 'Salsa / Jugo de carne', 
-            'Cupholder': 'Posavasos / Portavasos',
-            'Lawn': 'Césped / Prado / Jardín', 
-            'Sip': 'Sorbo / Trago pequeño', 
-            'Mutual': 'Mutuo / Recíproco', 
-            'Stale': 'Rancio / Viejo / Duro', 
-            'Nozzle': 'Boquilla / Pitorro',
-            'Bat': 'Murciélago / Bate', 
-            'Cider': 'Sidra', 
-            'Ashes': 'Cenizas', 
-            'Stable': 'Establo / Caballeriza / Estable', 
-            'Chew': 'Masticar / Mascar',
-            'Tart': 'Tarta / Ácido / Agrio', 
-            'Leftovers': 'Restos / Sobras', 
-            'Contemporary': 'Contemporáneo / Moderno', 
-            'Mumble': 'Murmurar / Mascullar', 
-            'Brew': 'Preparar / Hacer / Fermentar',
-            'Caterpillar': 'Oruga', 
-            'Dressing': 'Aderezo / Aliño / Vendaje', 
-            'Garlic': 'Ajo', 
-            'Ranch': 'Rancho / Granja / Hacienda', 
-            'Peel': 'Pelar / Cáscara',
-            'Pear': 'Pera', 
-            'Chop': 'Trocear / Cortar / Picar', 
-            'Pastrami': 'Pastrami / Carne curada', 
-            'Grip': 'Agarrar / Agarre / Empuñadura', 
-            'Invoice': 'Factura',
-            'Stew': 'Estofado / Guiso', 
-            'Break': 'Romper / Descanso / Pausa', 
-            'Lunch': 'Almuerzo / Comida', 
-            'Teapot': 'Tetera', 
-            'Doorbell': 'Timbre / Campanilla',
-            'Mug': 'Taza / Jarro', 
-            'Corn': 'Maíz / Elote / Choclo', 
-            'Billionaire': 'Multimillonario / Billonario', 
-            'Dishwasher': 'Lavavajillas / Lavaplatos', 
-            'Honey': 'Miel',
-            'Plant': 'Planta / Plantar', 
-            'Pomegranate': 'Granada', 
-            'Asparagus': 'Espárrago', 
-            'Diet': 'Dieta / Régimen', 
-            'Lake': 'Lago',
+            'Alarm': 'Alarma',
+            'Alcohol': 'Alcohol',
+            'Battery': 'Batería / Pila',
+            'Bell': 'Campana / Timbre',
+            'Bubble': 'Burbuja / Pompa',
+            'Cap': 'Gorra / Gorro / Tapa',
+            'Ceiling': 'Techo / Cielo raso',
+            'Chain': 'Cadena',
+            'Coin': 'Moneda',
+            'Curtain': 'Cortina',
+            'File': 'Archivo / Carpeta / Lima',
+            'Frame': 'Marco / Cuadro',
+            'Fuel': 'Combustible / Carburante',
+            'Heating': 'Calefacción / Calentamiento',
+            'Iron': 'Plancha / Hierro',
+            'Keyboard': 'Teclado',
+            'Needle': 'Aguja',
+            'Pan': 'Sartén / Cacerola',
+            'Pin': 'Alfiler / Broche / Pin',
+            'Pipe': 'Tubería / Tubo / Pipa',
+            'Pot': 'Olla / Maceta',
+            'Receipt': 'Recibo / Comprobante',
+            'Rope': 'Cuerda / Soga',
+            'Shelf': 'Estantería / Estante',
+            'Tin': 'Lata / Estaño',
+            'Coal': 'Carbón',
+            'Cotton': 'Algodón',
+            'Diamond': 'Diamante',
+            'Dirt': 'Suciedad / Tierra / Mugre',
+            'Flour': 'Harina',
+            'Fur': 'Piel / Pelaje',
+            'Grain': 'Grano / Cereal',
+            'Ingredient': 'Ingrediente',
+            'Leaf': 'Hoja',
+            'Leather': 'Cuero / Piel',
+            'Liquid': 'Líquido',
+            'Mud': 'Barro / Lodo',
+            'Sand': 'Arena',
+            'Seed': 'Semilla',
+            'Wool': 'Lana',
+            'Bee': 'Abeja',
+            'Earthquake': 'Terremoto / Sismo',
+            'Flood': 'Inundación',
+            'Hurricane': 'Huracán',
+            'Path': 'Camino / Sendero / Ruta',
+            'Shell': 'Concha / Cáscara / Caparazón',
+            'Wing': 'Ala',
+            'Tail': 'Cola / Rabo',
+            'Tent': 'Tienda / Carpa',
+            'Yard': 'Patio / Jardín / Yarda',
+            'Bride': 'Novia',
+            'Captain': 'Capitán',
+            'Guard': 'Guardia / Guardián',
+            'Photographer': 'Fotógrafo',
+            'Priest': 'Sacerdote / Cura',
+            'Prince': 'Príncipe',
+            'Princess': 'Princesa',
+            'Prisoner': 'Prisionero / Preso',
+            'Robot': 'Robot',
+            'Sailor': 'Marinero',
+            'Stranger': 'Desconocido / Extraño',
+            'Youth': 'Juventud / Joven',
+            'Border': 'Frontera / Borde',
+            'Cottage': 'Cabaña / Casa de campo',
+            'Court': 'Cancha / Tribunal / Corte',
+            'Entrance': 'Entrada',
+            'Fence': 'Valla / Cerca',
+            'Garage': 'Garaje',
+            'Laboratory': 'Laboratorio',
+            'Mall': 'Centro comercial',
+            'Port': 'Puerto',
+            'Stadium': 'Estadio',
+            'Bake': 'Hornear / Cocinar al horno',
+            'Bite': 'Morder / Mordisco',
+            'Climb': 'Escalar / Trepar / Subir',
+            'Explode': 'Explotar / Estallar',
+            'Fry': 'Freír',
+            'Kick': 'Patear / Dar una patada',
+            'Kiss': 'Besar / Beso',
+            'Knock': 'Llamar / Tocar / Golpear',
+            'Measure': 'Medir / Medida',
+            'Mix': 'Mezclar / Mezcla',
+            'Pack': 'Empacar / Empaquetar',
+            'Swim': 'Nadar',
+            'Chest': 'Pecho / Cofre',
+            'Drum': 'Tambor / Batería',
+            'Muscle': 'Músculo',
+            'Flag': 'Bandera',
+            'Glove': 'Guante',
+            'Tongue': 'Lengua',
+            'Breath': 'Aliento / Respiración',
+            'Nail': 'Uña / Clavo',
+            'Album': 'Álbum',
+            'Package': 'Paquete / Embalaje',
+            'Helicopter': 'Helicóptero',
+            'Net': 'Red / Malla',
+            'Signal': 'Señal',
+            'Tape': 'Cinta / Celo',
+            'Tube': 'Tubo',
+            'Sculpture': 'Escultura',
             // Spanish to English
-            'Camarero': 'Waiter / Server', 
-            'Rancio': 'Stale / Rancid', 
-            'Malvavisco': 'Marshmallow', 
-            'Pimienta': 'Pepper / Black pepper', 
-            'Restos': 'Leftovers / Remains / Scraps',
-            'Sorbo': 'Sip / Small drink', 
-            'Melocotón': 'Peach', 
-            'Trufa': 'Truffle', 
-            'Ajo': 'Garlic', 
-            'Colador': 'Strainer / Colander / Sieve',
-            'Aderezo': 'Dressing / Seasoning / Condiment', 
-            'Sidra': 'Cider / Apple cider', 
-            'Nata': 'Cream / Heavy cream', 
-            'Tarta': 'Tart / Cake / Pie', 
-            'Veterinario': 'Veterinarian / Vet',
-            'Pera': 'Pear', 
-            'Pavo': 'Turkey', 
-            'Sopa': 'Soup', 
-            'Oruga': 'Caterpillar', 
-            'Mezcla': 'Mix / Mixture / Blend',
-            'Tetera': 'Teapot / Kettle', 
-            'Calorías': 'Calories', 
-            'Boquilla': 'Nozzle / Mouthpiece', 
-            'Cenizas': 'Ashes', 
-            'Estofado': 'Stew / Braised dish',
-            'Miel': 'Honey', 
-            'Masticar': 'Chew / Chewing', 
-            'Rancho': 'Ranch / Farm', 
-            'Barbacoa': 'Barbecue / Grill / BBQ', 
-            'Mantequilla': 'Butter',
-            'Piña': 'Pineapple', 
-            'Espárrago': 'Asparagus', 
-            'Propulsionar': 'Propel / Push forward', 
-            'Timbre': 'Doorbell / Bell / Buzzer', 
-            'Factura': 'Invoice / Bill / Receipt',
-            'Pelar': 'Peel / To peel', 
-            'Pensar': 'Think / To think', 
-            'Palomitas': 'Popcorn', 
-            'Trocear': 'Chop / Cut into pieces', 
-            'Cortacésped': 'Mower / Lawn mower',
-            'Chicle': 'Gum / Chewing gum', 
-            'Oído': 'Ear / Hearing', 
-            'Murmurar': 'Mumble / Murmur / Whisper', 
-            'Panadería': 'Bakery / Bread shop', 
-            'Ternera': 'Veal / Beef',
-            'Murciélago': 'Bat (animal)', 
-            'Establo': 'Stable / Barn', 
-            'Posavasos': 'Cupholder / Coaster', 
-            'Romper': 'Break / To break / Tear', 
-            'Lago': 'Lake'
+            'Alarma': 'Alarm',
+            'Alcohol': 'Alcohol',
+            'Batería': 'Battery / Drums',
+            'Campana': 'Bell',
+            'Burbuja': 'Bubble',
+            'Gorra': 'Cap / Hat',
+            'Techo': 'Ceiling / Roof',
+            'Cadena': 'Chain',
+            'Moneda': 'Coin',
+            'Cortina': 'Curtain',
+            'Archivo': 'File / Archive',
+            'Marco': 'Frame',
+            'Combustible': 'Fuel',
+            'Calefacción': 'Heating',
+            'Plancha': 'Iron',
+            'Teclado': 'Keyboard',
+            'Aguja': 'Needle',
+            'Sartén': 'Pan / Frying pan',
+            'Alfiler': 'Pin',
+            'Tubería': 'Pipe / Plumbing',
+            'Olla': 'Pot',
+            'Recibo': 'Receipt',
+            'Cuerda': 'Rope',
+            'Estantería': 'Shelf / Shelving',
+            'Lata': 'Tin / Can',
+            'Carbón': 'Coal',
+            'Algodón': 'Cotton',
+            'Diamante': 'Diamond',
+            'Suciedad': 'Dirt / Dirtiness',
+            'Harina': 'Flour',
+            'Piel': 'Fur / Skin / Leather',
+            'Grano': 'Grain',
+            'Ingrediente': 'Ingredient',
+            'Hoja': 'Leaf / Sheet',
+            'Cuero': 'Leather',
+            'Líquido': 'Liquid',
+            'Barro': 'Mud',
+            'Arena': 'Sand',
+            'Semilla': 'Seed',
+            'Lana': 'Wool',
+            'Abeja': 'Bee',
+            'Terremoto': 'Earthquake',
+            'Inundación': 'Flood',
+            'Huracán': 'Hurricane',
+            'Camino': 'Path / Road / Way',
+            'Concha': 'Shell',
+            'Ala': 'Wing',
+            'Cola': 'Tail / Queue / Line',
+            'Tienda': 'Tent / Store / Shop',
+            'Patio': 'Yard / Patio / Courtyard',
+            'Novia': 'Bride / Girlfriend',
+            'Capitán': 'Captain',
+            'Guardia': 'Guard',
+            'Fotógrafo': 'Photographer',
+            'Sacerdote': 'Priest',
+            'Príncipe': 'Prince',
+            'Princesa': 'Princess',
+            'Prisionero': 'Prisoner',
+            'Robot': 'Robot',
+            'Marinero': 'Sailor',
+            'Desconocido': 'Stranger / Unknown',
+            'Juventud': 'Youth',
+            'Frontera': 'Border / Frontier',
+            'Cabaña': 'Cottage / Cabin',
+            'Cancha': 'Court / Field',
+            'Entrada': 'Entrance / Entry / Ticket',
+            'Valla': 'Fence',
+            'Garaje': 'Garage',
+            'Laboratorio': 'Laboratory',
+            'Centro comercial': 'Mall / Shopping center',
+            'Puerto': 'Port / Harbor',
+            'Estadio': 'Stadium',
+            'Hornear': 'Bake / To bake',
+            'Morder': 'Bite / To bite',
+            'Escalar': 'Climb / To climb',
+            'Explotar': 'Explode / To explode',
+            'Freír': 'Fry / To fry',
+            'Patear': 'Kick / To kick',
+            'Besar': 'Kiss / To kiss',
+            'Llamar': 'Knock / Call / To call',
+            'Medir': 'Measure / To measure',
+            'Mezclar': 'Mix / To mix',
+            'Empacar': 'Pack / To pack',
+            'Nadar': 'Swim / To swim',
+            'Pecho': 'Chest / Breast',
+            'Tambor': 'Drum',
+            'Músculo': 'Muscle',
+            'Bandera': 'Flag',
+            'Guante': 'Glove',
+            'Lengua': 'Tongue / Language',
+            'Aliento': 'Breath',
+            'Uña': 'Nail / Fingernail',
+            'Álbum': 'Album',
+            'Paquete': 'Package / Parcel',
+            'Helicóptero': 'Helicopter',
+            'Red': 'Net / Network',
+            'Señal': 'Signal / Sign',
+            'Cinta': 'Tape / Ribbon',
+            'Tubo': 'Tube / Pipe',
+            'Escultura': 'Sculpture'
         };
         
         // Look up translation directly from mapping
@@ -298,13 +394,6 @@ class CatchPhraseGame {
     }
 
     // Difficulty selection removed
-
-    selectNativeLanguage(language) {
-        this.nativeLanguage = language;
-        this.socket.emit('setNativeLanguage', { language });
-        // Show test screen with filtered words
-        this.showTest(language);
-    }
 
     submitGuess() {
         const guessInput = document.getElementById('guessInput');
@@ -345,10 +434,10 @@ class CatchPhraseGame {
         }
     }
 
-    playAgain() {
+    votePlayAgain() {
         this.socket.emit('votePlayAgain');
-        document.getElementById('playAgainAfterTestBtn').disabled = true;
-        document.getElementById('playAgainAfterTestBtn').textContent = 'Waiting for other player...';
+        document.getElementById('playAgainBtn').disabled = true;
+        document.getElementById('playAgainBtn').textContent = 'Waiting for other player...';
     }
 
     goHome() {
@@ -740,72 +829,6 @@ class CatchPhraseGame {
         scoreDiv.appendChild(labelDiv);
         scoreDiv.appendChild(valueDiv);
         finalScoresDisplay.appendChild(scoreDiv);
-    }
-
-    showTest(nativeLanguage) {
-        if (!this.gameState || !this.gameState.wordsShownInGame) {
-            this.showMessage('No words available for test', 'error');
-            return;
-        }
-
-        this.showScreen('testScreen');
-        this.generateTestQuestions(nativeLanguage);
-    }
-
-    generateTestQuestions(nativeLanguage) {
-        const testQuestions = document.getElementById('testQuestions');
-        testQuestions.innerHTML = '';
-
-        // Filter words: show only words that are NOT in the player's native language
-        const allWords = this.gameState.wordsShownInGame;
-        const englishWords = this.gameState.englishWords || [];
-        const spanishWords = this.gameState.spanishWords || [];
-        
-        const filteredWords = allWords.filter(word => {
-            // Determine if this word is in English or Spanish by checking word lists
-            const isEnglish = englishWords.includes(word);
-            const isSpanish = spanishWords.includes(word);
-            const wordLanguage = isEnglish ? 'en' : (isSpanish ? 'es' : null);
-            
-            // Only show words in the OTHER language (not native language)
-            return wordLanguage !== null && wordLanguage !== nativeLanguage;
-        });
-
-        // Words shown are in OTHER language, so translate TO native language
-        const nativeLanguageName = nativeLanguage === 'en' ? 'English' : 'Spanish';
-
-        filteredWords.forEach((word, index) => {
-            const questionDiv = document.createElement('div');
-            questionDiv.className = 'test-question';
-
-            const label = document.createElement('label');
-            label.className = 'test-question-label';
-            label.innerHTML = `${index + 1}. Translate <span class="test-word">"${word}"</span> to ${nativeLanguageName}:`;
-
-            const input = document.createElement('input');
-            input.type = 'text';
-            input.className = 'test-input';
-            input.id = `test-input-${index}`;
-            input.placeholder = 'Enter translation...';
-            input.dataset.word = word;
-
-            questionDiv.appendChild(label);
-            questionDiv.appendChild(input);
-            testQuestions.appendChild(questionDiv);
-        });
-    }
-
-    submitTest() {
-        const testInputs = document.querySelectorAll('.test-input');
-        const answers = {};
-
-        testInputs.forEach(input => {
-            const word = input.dataset.word;
-            answers[word] = input.value.trim();
-        });
-
-        // Send answers to server with native language
-        this.socket.emit('submitTest', { answers, nativeLanguage: this.nativeLanguage });
     }
 
     showMessage(message, type = 'info') {
