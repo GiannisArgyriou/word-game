@@ -787,9 +787,9 @@ class GameRoom {
   }
 }
 
-// Generate random room ID
+// Generate random room ID (6-digit number)
 function generateRoomId() {
-  return Math.random().toString(36).substring(2, 8).toUpperCase();
+  return Math.floor(100000 + Math.random() * 900000).toString();
 }
 
 // Socket.IO connection handling
