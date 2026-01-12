@@ -329,9 +329,9 @@ class GameRoom {
 
   getNewWord() {
     // Determine which language to use based on current round
-    // First half of rounds: English only
-    // Second half of rounds: Spanish only
-    const useLanguage = this.currentRound <= Math.floor(this.maxRounds / 2) ? 'en' : 'es';
+    // Rounds 1, 2, 5, 6: English
+    // Rounds 3, 4, 7, 8: Spanish
+    const useLanguage = (this.currentRound === 1 || this.currentRound === 2 || this.currentRound === 5 || this.currentRound === 6) ? 'en' : 'es';
     const wordPool = useLanguage === 'en' ? this.availableWordsEN : this.availableWordsES;
     
     // If no words available in this pool, refill it
@@ -558,7 +558,7 @@ class GameRoom {
 
 // Generate random room ID
 function generateRoomId() {
-  return Math.random().toString(36).substring(2, 8).toUpperCase();
+  return Math.floor(100000 + Math.random() * 900000).toString();
 }
 
 // Socket.IO connection handling

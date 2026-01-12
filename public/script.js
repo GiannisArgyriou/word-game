@@ -141,7 +141,7 @@ class CatchPhraseGame {
     createRoom() {
         const playerName = document.getElementById('playerName').value.trim();
         if (!playerName) {
-            this.showMessage('Please enter your tandemMOOC username', 'error');
+            this.showMessage('Please enter your tandemMOOC nickname', 'error');
             return;
         }
 
@@ -152,7 +152,7 @@ class CatchPhraseGame {
     showJoinForm() {
         const playerName = document.getElementById('playerName').value.trim();
         if (!playerName) {
-            this.showMessage('Please enter your tandemMOOC username first', 'error');
+            this.showMessage('Please enter your tandemMOOC nickname first', 'error');
             return;
         }
         this.playerName = playerName;
