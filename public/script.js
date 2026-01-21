@@ -13,9 +13,11 @@ class CatchPhraseGame {
         this.playerId = null;
         this.playerName = '';
         this.roomId = '';
+        this.keepAliveInterval = null;
         
         this.initializeEventListeners();
         this.setupSocketListeners();
+        this.startKeepAlive();
     }
 
     initializeEventListeners() {
@@ -855,6 +857,23 @@ class CatchPhraseGame {
                 messageDiv.parentNode.removeChild(messageDiv);
             }
         }, 4000);
+    }
+
+    startKeepAlive() {
+        // Send a heartbeat every 15 seconds to keep connection alive
+        // Especially important when browser tab is minimized
+        this.keepAliveInterval = setInterval(() => {
+            if (this.socket.connected) {
+                this.socket.emit('ping');
+            }
+        }, 15000);
+    }
+
+    stopKeepAlive() {
+        if (this.keepAliveInterval) {
+            clearInterval(this.keepAliveInterval);
+            this.keepAliveInterval = null;
+        }
     }
 }
 
