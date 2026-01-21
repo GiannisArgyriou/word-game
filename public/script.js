@@ -67,6 +67,21 @@ class CatchPhraseGame {
     }
 
     setupSocketListeners() {
+        // Handle initial connection and reconnections
+        this.socket.on('connect', () => {
+            console.log('Socket connected:', this.socket.id);
+            
+            // If we were in a room and this is a reconnection, rejoin
+            // Check if we have room info but haven't received a fresh game state
+            if (this.roomId && this.playerName && this.currentScreen !== 'homeScreen') {
+                console.log(`Auto-rejoining room ${this.roomId} as ${this.playerName} after connection`);
+                this.socket.emit('rejoinRoom', { 
+                    roomId: this.roomId, 
+                    playerName: this.playerName 
+                });
+            }
+        });
+
         this.socket.on('roomCreated', (data) => {
             this.roomId = data.roomId;
             this.gameState = data.gameState;
@@ -77,6 +92,7 @@ class CatchPhraseGame {
 
         this.socket.on('roomJoined', (data) => {
             this.gameState = data.gameState;
+            this.roomId = data.gameState.roomId; // Store the room ID for reconnection
             this.showScreen('waitingScreen');
             this.updateWaitingRoom();
             this.showMessage('Joined room successfully!', 'success');
