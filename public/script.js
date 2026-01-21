@@ -860,13 +860,13 @@ class CatchPhraseGame {
     }
 
     startKeepAlive() {
-        // Send a heartbeat every 15 seconds to keep connection alive
+        // Send a heartbeat every 5 seconds to keep connection alive
         // Especially important when browser tab is minimized
         this.keepAliveInterval = setInterval(() => {
             if (this.socket.connected) {
                 this.socket.emit('ping');
             }
-        }, 15000);
+        }, 5000);
     }
 
     stopKeepAlive() {

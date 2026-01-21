@@ -11,12 +11,13 @@ const io = socketIo(server, {
     origin: "*",
     methods: ["GET", "POST"]
   },
-  pingTimeout: 60000,          // How long to wait for a pong response (60 seconds)
-  pingInterval: 25000,          // How often to send ping packets (25 seconds)
+  pingTimeout: 120000,          // How long to wait for a pong response (2 minutes)
+  pingInterval: 10000,          // How often to send ping packets (10 seconds)
   upgradeTimeout: 30000,        // Time to wait for upgrade to succeed
   allowUpgrades: true,
   transports: ['websocket', 'polling'],  // Allow fallback to polling
-  connectTimeout: 45000         // Connection timeout
+  connectTimeout: 45000,         // Connection timeout
+  maxHttpBufferSize: 1e8        // Increase buffer size
 });
 
 const PORT = process.env.PORT || 3000;
@@ -29,6 +30,17 @@ initDatabase().catch(err => {
 
 // Serve static files
 app.use(express.static(path.join(__dirname, 'public')));
+
+// Health check endpoint for Railway
+app.get('/health', (req, res) => {
+  res.status(200).json({ 
+    status: 'ok',
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime(),
+    activeRooms: rooms.size,
+    activePlayers: players.size
+  });
+});
 
 // Word sets for the game
 const WORDS_EN = [
