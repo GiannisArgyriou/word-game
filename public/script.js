@@ -156,6 +156,15 @@ class CatchPhraseGame {
         this.socket.on('reconnect', (attemptNumber) => {
             console.log('Reconnected after', attemptNumber, 'attempts');
             this.showMessage('Reconnected to server!', 'success');
+            
+            // If we were in a room, rejoin it
+            if (this.roomId && this.playerName) {
+                console.log(`Rejoining room ${this.roomId} as ${this.playerName}`);
+                this.socket.emit('rejoinRoom', { 
+                    roomId: this.roomId, 
+                    playerName: this.playerName 
+                });
+            }
         });
 
         this.socket.on('reconnect_attempt', (attemptNumber) => {

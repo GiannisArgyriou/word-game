@@ -627,6 +627,50 @@ io.on('connection', (socket) => {
     }
   });
 
+  socket.on('rejoinRoom', (data) => {
+    const room = rooms.get(data.roomId);
+    
+    if (room) {
+      // Find and remove the old player entry (with disconnected socket ID)
+      const oldPlayerIndex = room.players.findIndex(p => p.name === data.playerName);
+      
+      if (oldPlayerIndex !== -1) {
+        // Remove old socket ID from players map
+        const oldPlayer = room.players[oldPlayerIndex];
+        players.delete(oldPlayer.id);
+        
+        // Update the player with new socket ID
+        room.players[oldPlayerIndex] = { id: socket.id, name: data.playerName };
+        
+        console.log(`${data.playerName} rejoined room ${data.roomId} with new socket ID ${socket.id}`);
+      } else {
+        // Player wasn't in the room, try to add them
+        if (room.addPlayer(socket.id, data.playerName)) {
+          console.log(`${data.playerName} joined room ${data.roomId} (new player)`);
+        } else {
+          socket.emit('error', { message: 'Room is full' });
+          return;
+        }
+      }
+      
+      // Update players map with new socket ID
+      players.set(socket.id, { roomId: data.roomId, playerName: data.playerName });
+      
+      // Join the socket.io room
+      socket.join(data.roomId);
+      
+      // Send current game state
+      socket.emit('roomJoined', { gameState: room.getGameStateForPlayer(socket.id) });
+      
+      // Notify all players
+      room.players.forEach(player => {
+        io.to(player.id).emit('gameUpdate', room.getGameStateForPlayer(player.id));
+      });
+    } else {
+      socket.emit('error', { message: 'Room not found' });
+    }
+  });
+
   socket.on('startGame', () => {
     const playerData = players.get(socket.id);
     if (playerData) {
