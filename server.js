@@ -300,6 +300,7 @@ class GameRoom {
     this.playerNativeLanguages = new Map(); // Store each player's native language
     this.playAgainVotes = new Set(); // Track which players voted to play again
     this.io = ioInstance; // Store io instance for broadcasting
+    this.deleteTimer = null; // Timer for delayed room deletion
   }
 
   addPlayer(playerId, playerName) {
@@ -631,6 +632,13 @@ io.on('connection', (socket) => {
     const room = rooms.get(data.roomId);
     
     if (room) {
+      // Cancel room deletion timer since someone is rejoining
+      if (room.deleteTimer) {
+        clearTimeout(room.deleteTimer);
+        room.deleteTimer = null;
+        console.log(`Cancelled deletion timer for room ${data.roomId}`);
+      }
+      
       // Find and remove the old player entry (with disconnected socket ID)
       const oldPlayerIndex = room.players.findIndex(p => p.name === data.playerName);
       
@@ -639,8 +647,12 @@ io.on('connection', (socket) => {
         const oldPlayer = room.players[oldPlayerIndex];
         players.delete(oldPlayer.id);
         
-        // Update the player with new socket ID
-        room.players[oldPlayerIndex] = { id: socket.id, name: data.playerName };
+        // Update the player with new socket ID and mark as connected
+        room.players[oldPlayerIndex] = { 
+          id: socket.id, 
+          name: data.playerName,
+          disconnected: false
+        };
         
         console.log(`${data.playerName} rejoined room ${data.roomId} with new socket ID ${socket.id}`);
       } else {
@@ -664,7 +676,9 @@ io.on('connection', (socket) => {
       
       // Notify all players
       room.players.forEach(player => {
-        io.to(player.id).emit('gameUpdate', room.getGameStateForPlayer(player.id));
+        if (!player.disconnected) {
+          io.to(player.id).emit('gameUpdate', room.getGameStateForPlayer(player.id));
+        }
       });
     } else {
       socket.emit('error', { message: 'Room not found' });
@@ -782,17 +796,38 @@ io.on('connection', (socket) => {
     if (playerData) {
       const room = rooms.get(playerData.roomId);
       if (room) {
-        room.removePlayer(socket.id);
+        // Don't immediately remove player or delete room - give grace period for reconnection
+        console.log(`Player ${playerData.playerName} disconnected from room ${playerData.roomId}, keeping room alive for reconnection`);
         
-        if (room.players.length === 0) {
-          rooms.delete(playerData.roomId);
-          console.log(`Room ${playerData.roomId} deleted (empty)`);
-        } else {
-          // Send updated game state to remaining players
+        // Cancel any existing delete timer
+        if (room.deleteTimer) {
+          clearTimeout(room.deleteTimer);
+          room.deleteTimer = null;
+        }
+        
+        // Set a timer to delete the room if no one reconnects within 2 minutes
+        room.deleteTimer = setTimeout(() => {
+          const currentRoom = rooms.get(playerData.roomId);
+          if (currentRoom && currentRoom.players.length === 0) {
+            rooms.delete(playerData.roomId);
+            console.log(`Room ${playerData.roomId} deleted after grace period (empty)`);
+          }
+        }, 240000); // 4 minutes grace period
+        
+        // Mark player as disconnected but don't remove them yet
+        const playerIndex = room.players.findIndex(p => p.id === socket.id);
+        if (playerIndex !== -1) {
+          room.players[playerIndex].disconnected = true;
+          room.players[playerIndex].disconnectedAt = Date.now();
+        }
+        
+        // If any player is still connected, notify them
+        const connectedPlayers = room.players.filter(p => !p.disconnected);
+        if (connectedPlayers.length > 0) {
           room.broadcastGameState();
         }
       }
-      players.delete(socket.id);
+      // Don't delete from players map yet - needed for rejoin
     }
   });
 });
