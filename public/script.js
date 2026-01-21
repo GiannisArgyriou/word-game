@@ -1,6 +1,13 @@
 class CatchPhraseGame {
     constructor() {
-        this.socket = io();
+        this.socket = io({
+            reconnection: true,
+            reconnectionDelay: 1000,
+            reconnectionDelayMax: 5000,
+            reconnectionAttempts: 10,
+            timeout: 20000,
+            transports: ['websocket', 'polling']
+        });
         this.currentScreen = 'homeScreen';
         this.gameState = null;
         this.playerId = null;
@@ -132,9 +139,34 @@ class CatchPhraseGame {
             }
         });
 
-        this.socket.on('disconnect', () => {
-            this.showMessage('Disconnected from server', 'error');
+        this.socket.on('disconnect', (reason) => {
+            console.log('Disconnected:', reason);
+            if (reason === 'io server disconnect') {
+                // Server forcibly disconnected, try to reconnect
+                this.showMessage('Connection lost. Attempting to reconnect...', 'warning');
+                this.socket.connect();
+            } else if (reason === 'transport close' || reason === 'ping timeout') {
+                // Connection issues, will auto-reconnect
+                this.showMessage('Connection interrupted. Reconnecting...', 'warning');
+            }
+        });
+
+        this.socket.on('reconnect', (attemptNumber) => {
+            console.log('Reconnected after', attemptNumber, 'attempts');
+            this.showMessage('Reconnected to server!', 'success');
+        });
+
+        this.socket.on('reconnect_attempt', (attemptNumber) => {
+            console.log('Reconnection attempt', attemptNumber);
+        });
+
+        this.socket.on('reconnect_failed', () => {
+            this.showMessage('Failed to reconnect. Please refresh the page.', 'error');
             this.goHome();
+        });
+
+        this.socket.on('connect_error', (error) => {
+            console.error('Connection error:', error);
         });
     }
 

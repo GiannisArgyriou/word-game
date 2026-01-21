@@ -10,7 +10,13 @@ const io = socketIo(server, {
   cors: {
     origin: "*",
     methods: ["GET", "POST"]
-  }
+  },
+  pingTimeout: 60000,          // How long to wait for a pong response (60 seconds)
+  pingInterval: 25000,          // How often to send ping packets (25 seconds)
+  upgradeTimeout: 30000,        // Time to wait for upgrade to succeed
+  allowUpgrades: true,
+  transports: ['websocket', 'polling'],  // Allow fallback to polling
+  connectTimeout: 45000         // Connection timeout
 });
 
 const PORT = process.env.PORT || 3000;
@@ -565,6 +571,15 @@ function generateRoomId() {
 io.on('connection', (socket) => {
   console.log('User connected:', socket.id);
 
+  // Add connection resilience handlers
+  socket.on('ping', () => {
+    socket.emit('pong');
+  });
+
+  socket.on('error', (error) => {
+    console.error(`Socket error for ${socket.id}:`, error);
+  });
+
   socket.on('createRoom', (data) => {
     const roomId = generateRoomId();
     const room = new GameRoom(roomId, io);
@@ -704,8 +719,8 @@ io.on('connection', (socket) => {
     }
   });
 
-  socket.on('disconnect', () => {
-    console.log('User disconnected:', socket.id);
+  socket.on('disconnect', (reason) => {
+    console.log(`User disconnected: ${socket.id}, Reason: ${reason}`);
     
     const playerData = players.get(socket.id);
     if (playerData) {
@@ -715,6 +730,7 @@ io.on('connection', (socket) => {
         
         if (room.players.length === 0) {
           rooms.delete(playerData.roomId);
+          console.log(`Room ${playerData.roomId} deleted (empty)`);
         } else {
           // Send updated game state to remaining players
           room.broadcastGameState();
