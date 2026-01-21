@@ -301,7 +301,7 @@ class CatchPhraseGame {
 
     selectNativeLanguage(language) {
         this.nativeLanguage = language;
-        this.socket.emit('setNativeLanguage', { language });
+        this.socket.emit('setNativeLanguage', { nativeLanguage: language });
         // Show test screen with filtered words
         this.showTest(language);
     }
