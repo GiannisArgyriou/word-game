@@ -14,6 +14,7 @@ class CatchPhraseGame {
         this.playerName = '';
         this.roomId = '';
         this.keepAliveInterval = null;
+        this.testSubmitted = false; // Track if player has submitted test
         
         this.initializeEventListeners();
         this.setupSocketListeners();
@@ -139,6 +140,7 @@ class CatchPhraseGame {
 
         this.socket.on('testSubmitted', (data) => {
             if (data.success) {
+                this.testSubmitted = true; // Mark that test has been submitted
                 this.showScreen('testCompleteScreen');
                 this.showMessage('Your answers have been recorded!', 'success');
             }
@@ -405,6 +407,7 @@ class CatchPhraseGame {
     }
 
     playAgain() {
+        this.testSubmitted = false; // Reset test submission flag for new game
         this.socket.emit('votePlayAgain');
         document.getElementById('playAgainAfterTestBtn').disabled = true;
         document.getElementById('playAgainAfterTestBtn').textContent = 'Waiting for other player...';
@@ -414,6 +417,7 @@ class CatchPhraseGame {
         this.gameState = null;
         this.roomId = '';
         this.playerName = '';
+        this.testSubmitted = false; // Reset test submission flag
         document.getElementById('playerName').value = '';
         document.getElementById('roomCode').value = '';
         this.hideJoinForm();
@@ -447,7 +451,12 @@ class CatchPhraseGame {
                 break;
             
             case 'finished':
-                this.showScreen('gameOverScreen');
+                // If test already submitted, go directly to test complete screen
+                if (this.testSubmitted) {
+                    this.showScreen('testCompleteScreen');
+                } else {
+                    this.showScreen('gameOverScreen');
+                }
                 this.updateGameOverScreen();
                 break;
         }
