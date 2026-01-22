@@ -15,6 +15,7 @@ class CatchPhraseGame {
         this.roomId = '';
         this.keepAliveInterval = null;
         this.testSubmitted = false; // Track if player has submitted test
+        this.testAnswers = {}; // Store test answers to preserve them when changing language
         
         this.initializeEventListeners();
         this.setupSocketListeners();
@@ -409,6 +410,7 @@ class CatchPhraseGame {
 
     playAgain() {
         this.testSubmitted = false; // Reset test submission flag for new game
+        this.testAnswers = {}; // Clear saved test answers for new game
         this.socket.emit('votePlayAgain');
         document.getElementById('playAgainAfterTestBtn').disabled = true;
         document.getElementById('playAgainAfterTestBtn').textContent = 'Waiting for other player...';
@@ -419,6 +421,7 @@ class CatchPhraseGame {
         this.roomId = '';
         this.playerName = '';
         this.testSubmitted = false; // Reset test submission flag
+        this.testAnswers = {}; // Clear saved test answers
         document.getElementById('playerName').value = '';
         document.getElementById('roomCode').value = '';
         this.hideJoinForm();
@@ -857,6 +860,11 @@ class CatchPhraseGame {
             input.id = `test-input-${index}`;
             input.placeholder = 'Enter translation...';
             input.dataset.word = word;
+            
+            // Restore previously entered answer if it exists
+            if (this.testAnswers[word]) {
+                input.value = this.testAnswers[word];
+            }
 
             questionDiv.appendChild(label);
             questionDiv.appendChild(input);
@@ -875,13 +883,26 @@ class CatchPhraseGame {
 
         // Send answers to server with native language
         this.socket.emit('submitTest', { answers, nativeLanguage: this.nativeLanguage });
+        
+        // Clear saved answers after submission
+        this.testAnswers = {};
     }
 
     changeLanguage() {
+        // Save current answers before going back
+        const testInputs = document.querySelectorAll('.test-input');
+        testInputs.forEach(input => {
+            const word = input.dataset.word;
+            const value = input.value.trim();
+            if (value) {
+                this.testAnswers[word] = value;
+            }
+        });
+        
         // Go back to game over screen to select language again
         this.nativeLanguage = null; // Clear current selection
         this.showScreen('gameOverScreen');
-        this.showMessage('Please select your native language again', 'info');
+        this.showMessage('Your answers have been saved. Select your language again.', 'info');
     }
 
     showMessage(message, type = 'info') {
