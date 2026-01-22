@@ -52,6 +52,7 @@ class CatchPhraseGame {
 
         // Test screen events
         document.getElementById('submitTestBtn').addEventListener('click', () => this.submitTest());
+        document.getElementById('changeLanguageBtn').addEventListener('click', () => this.changeLanguage());
         
         // Test complete screen events
         document.getElementById('playAgainAfterTestBtn').addEventListener('click', () => this.playAgain());
@@ -874,6 +875,13 @@ class CatchPhraseGame {
 
         // Send answers to server with native language
         this.socket.emit('submitTest', { answers, nativeLanguage: this.nativeLanguage });
+    }
+
+    changeLanguage() {
+        // Go back to game over screen to select language again
+        this.nativeLanguage = null; // Clear current selection
+        this.showScreen('gameOverScreen');
+        this.showMessage('Please select your native language again', 'info');
     }
 
     showMessage(message, type = 'info') {
