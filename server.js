@@ -733,7 +733,7 @@ io.on('connection', (socket) => {
     }
   });
 
-  socket.on('submitTest', (data) => {
+  socket.on('submitTest', async (data) => {
     const playerData = players.get(socket.id);
     if (playerData) {
       const room = rooms.get(playerData.roomId);
@@ -755,13 +755,23 @@ io.on('connection', (socket) => {
         
         console.log(`Test submitted by ${playerData.playerName} in room ${playerData.roomId} - Score: ${room.totalScore}:`, data.answers);
         
-        // Save to database (async, won't block response)
-        saveTestResult(testResult).catch(err => {
-          // Errors are already logged in database.js
-        });
-        
-        // Send confirmation
-        socket.emit('testSubmitted', { success: true });
+        // Save to database (with retry logic and backup)
+        try {
+          const id = await saveTestResult(testResult);
+          if (id) {
+            console.log(`✅ Test result saved to database (ID: ${id}) - Player: ${playerData.playerName}, Room: ${playerData.roomId}`);
+            socket.emit('testSubmitted', { success: true, savedToDatabase: true });
+          } else {
+            // Saved to backup but not database
+            console.log(`💾 Test result saved to backup file - Player: ${playerData.playerName}, Room: ${playerData.roomId}`);
+            socket.emit('testSubmitted', { success: true, savedToDatabase: false, message: 'Saved to backup, will retry database save' });
+          }
+        } catch (err) {
+          // Error already logged in saveTestResult
+          // File backup was already created, so data is safe
+          console.log(`⚠️  Database save failed but backup exists - Player: ${playerData.playerName}`);
+          socket.emit('testSubmitted', { success: true, savedToDatabase: false, message: 'Saved to backup file' });
+        }
       }
     }
   });
